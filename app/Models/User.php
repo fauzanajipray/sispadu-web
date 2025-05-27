@@ -44,4 +44,9 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function positions()
+    {
+        return $this->belongsToMany(Position::class, 'position_users', 'user_id', 'position_id');
+    }
 }
