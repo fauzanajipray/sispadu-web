@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\ReportRequest;
+use App\Models\Report;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 
@@ -14,7 +15,7 @@ use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 class ReportCrudController extends CrudController
 {
     use \Backpack\CRUD\app\Http\Controllers\Operations\ListOperation;
-    use \Backpack\CRUD\app\Http\Controllers\Operations\CreateOperation;
+    // use \Backpack\CRUD\app\Http\Controllers\Operations\CreateOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\UpdateOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\DeleteOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\ShowOperation;
@@ -29,6 +30,13 @@ class ReportCrudController extends CrudController
         CRUD::setModel(\App\Models\Report::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/report');
         CRUD::setEntityNameStrings('report', 'reports');
+        // $role = backpack_auth()->user()->role;
+        // if(!in_array($role, ['superadmin']))
+        // {
+        // $this->crud->denyAccess(['delete', 'create', 'show', 'list', 'update']);
+        // $this->crud->denyAccess(['create', 'update', 'delete', 'list']);
+        // $this->crud->allowAccess(['list', 'show']);
+        // }
     }
 
     /**
@@ -39,9 +47,40 @@ class ReportCrudController extends CrudController
      */
     protected function setupListOperation()
     {
+        CRUD::addColumn([
+            'name' => 'user_id',
+            'label' => 'user',
+            'type' => 'relationship',
+            'entity'    => 'user', // the method that defines the relationship in your Model
+            'attribute' => 'name',
+        ]);
         CRUD::column('user_id');
         CRUD::column('content');
-        CRUD::column('status');
+        $this->crud->addColumn([
+            'name' => 'status',
+            'label' => 'Status',
+            'allows_null' => false,
+            'value' => function ($entry) {
+                return strtoupper($entry->status);
+            },
+            'wrapper' => [
+                'element' => 'span',
+                'class' => function ($crud, $column, $entry, $related_key) {
+                    switch ($entry->status) {
+                        case Report::SUCCESS:
+                            return 'badge badge-info';
+                        case Report::REJECTED:
+                            return 'badge badge-danger';
+                        case Report::PENDING:
+                            return 'badge badge-warning';
+                        case Report::CANCELLED:
+                            return 'badge badge-secondary';
+                        default:
+                            return 'badge badge-dark';
+                    }
+                },
+            ],
+        ]);
         CRUD::column('created_at');
         CRUD::column('updated_at');
 
@@ -83,4 +122,18 @@ class ReportCrudController extends CrudController
     {
         $this->setupCreateOperation();
     }
+
+    public function show($id)
+    {
+        $this->crud->hasAccessOrFail('show');
+
+
+        $this->data['entry'] = $this->crud->getEntry($id);
+        // $this->data['entry'] = Transaction::with('transactionPayments')->findOrFail($id);
+        $this->data['crud'] = $this->crud;
+        // $this->data['products'] = TransactionProduct::where('transaction_id', $id)->get();
+        $this->data['products'] = [];
+        return view('reports.show', $this->data);
+    }
+
 }

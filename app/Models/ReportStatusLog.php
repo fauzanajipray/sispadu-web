@@ -2,35 +2,64 @@
 
 namespace App\Models;
 
-use Backpack\CRUD\app\Models\Traits\CrudTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Report extends Model
+class ReportStatusLog extends Model
 {
-    use CrudTrait;
-    use HasFactory;
-
     /*
     |--------------------------------------------------------------------------
     | GLOBAL VARIABLES
     |--------------------------------------------------------------------------
     */
 
-    protected $table = 'reports';
-    // protected $primaryKey = 'id';
-    // public $timestamps = false;
-    protected $guarded = ['id'];
-    // protected $fillable = [];
-    // protected $hidden = [];
-    // protected $dates = [];
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'report_status_logs';
 
-    const SUBMITTED = 'submitted';
-    const PENDING = 'pending';
-    const SUCCESS = 'success';
-    const REJECTED = 'rejected';
-    const CANCELLED = 'cancelled';
-    
+    /**
+     * The primary key for the model.
+     *
+     * @var string
+     */
+    // protected $primaryKey = 'id';
+
+    /**
+     * Indicates if the model should be timestamped.
+     *
+     * @var boolean
+     */
+    // public $timestamps = false;
+
+    /**
+     * The attributes that aren't mass assignable.
+     *
+     * @var array
+     */
+    // protected $guarded = ['id'];
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    // protected $fillable = [];
+
+    /**
+     * The attributes that should be hidden for arrays
+     *
+     * @var array
+     */
+    // protected $hidden = [];
+
+    /**
+     * The attributes that should be mutated to dates.
+     *
+     * @var array
+     */
+    // protected $dates = [];
 
     /*
     |--------------------------------------------------------------------------
@@ -38,38 +67,11 @@ class Report extends Model
     |--------------------------------------------------------------------------
     */
 
-    public static function boot()
-    {
-        parent::boot();
-
-        // Event triggered after a report is created
-        static::created(function ($report) {
-            // Create a new ReportStatusLog entry
-            \App\Models\ReportStatusLog::create([
-                'report_id' => $report->id,
-                'user_id' => $report->user_id, // Optional: user who created the report
-                'from_status' => null,
-                'to_status' => self::SUBMITTED,
-                'note' => 'Report created with status Submitted',
-            ]);
-        });
-    }
-
     /*
     |--------------------------------------------------------------------------
     | RELATIONS
     |--------------------------------------------------------------------------
     */
-
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
-
-    public function images()
-    {
-        return $this->hasMany(ReportImage::class, 'report_id');
-    }
 
     /*
     |--------------------------------------------------------------------------

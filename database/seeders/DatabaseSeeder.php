@@ -243,7 +243,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $report3 = Report::where('title', 'Sampah Menumpuk di RT 2')->first();
-        $report4 = Report::where('title', 'Pohon Tumbang di RT 3')->first();
+        // $report4 = Report::where('title', 'Pohon Tumbang di RT 3')->first();
 
         // Disposisi laporan baru
         ReportDisposition::updateOrCreate([
@@ -254,12 +254,12 @@ class DatabaseSeeder extends Seeder
             'note' => 'Mohon segera ditangani, sampah menumpuk di RT 2.',
         ]);
 
-        ReportDisposition::updateOrCreate([
-            'report_id' => $report4->id,
-            'from_position_id' => $rt3->id,
-            'to_position_id' => $kadusB->id,
-        ], [
-            'note' => 'Pohon tumbang di RT 3 perlu segera dibersihkan.',
-        ]);
+        // ReportDisposition::updateOrCreate([
+        //     'report_id' => $report4->id,
+        //     'from_position_id' => $rt3->id,
+        //     'to_position_id' => $kadusB->id,
+        // ], [
+        //     'note' => 'Pohon tumbang di RT 3 perlu segera dibersihkan.',
+        // ]);
     }
 }
