@@ -103,40 +103,40 @@ class DatabaseSeeder extends Seeder
         // Kepala Desa (level paling atas, parent_id = null)
         $kepalaDesa = Position::updateOrCreate([
             'name' => 'Kepala Desa',
-            'village_name' => 'Desa Sukamaju',
+            'detail' => 'Desa Sukamaju',
             'parent_id' => null,
         ]);
 
         // Kadus dengan parent Kepala Desa
         $kadusA = Position::updateOrCreate([
             'name' => 'Kadus A',
-            'village_name' => 'Desa Sukamaju',
+            'detail' => 'Desa Sukamaju',
             'parent_id' => $kepalaDesa->id,
         ]);
 
         $kadusB = Position::updateOrCreate([
             'name' => 'Kadus B',
-            'village_name' => 'Desa Sukamaju',
+            'detail' => 'Desa Sukamaju',
             'parent_id' => $kepalaDesa->id,
         ]);
 
         // RT dengan parent Kadus A
         Position::updateOrCreate([
             'name' => 'RT 1',
-            'village_name' => 'Desa Sukamaju',
+            'detail' => 'Desa Sukamaju',
             'parent_id' => $kadusA->id,
         ]);
 
         Position::updateOrCreate([
             'name' => 'RT 2',
-            'village_name' => 'Desa Sukamaju',
+            'detail' => 'Desa Sukamaju',
             'parent_id' => $kadusA->id,
         ]);
 
         // RT dengan parent Kadus B
         Position::updateOrCreate([
             'name' => 'RT 3',
-            'village_name' => 'Desa Sukamaju',
+            'detail' => 'Desa Sukamaju',
             'parent_id' => $kadusB->id,
         ]);
     }
@@ -165,12 +165,20 @@ class DatabaseSeeder extends Seeder
         // Assign posisi ke user (kadang user bisa punya posisi lebih dari 1, contoh)
         // Kalau kamu pakai pivot table 'position_user' dengan fields user_id, position_id
 
-        $budi->positions()->syncWithoutDetaching([$kadusA->id]);   // Budi Kadus A
-        $citra->positions()->syncWithoutDetaching([$kadusB->id]);  // Citra Kadus B
-        $dedi->positions()->syncWithoutDetaching([$kepalaDesa->id]); // Dedi Kepala Desa (misal)
-        $eko->positions()->syncWithoutDetaching([$rt1->id]);       // Eko RT 1
-        $fina->positions()->syncWithoutDetaching([$rt2->id]);      // Fina RT 2
-        $gilang->positions()->syncWithoutDetaching([$rt3->id]);    // Gilang RT 3
+        // $budi->positions()->syncWithoutDetaching([$kadusA->id]);   // Budi Kadus A
+        // $citra->positions()->syncWithoutDetaching([$kadusB->id]);  // Citra Kadus B
+        // $dedi->positions()->syncWithoutDetaching([$kepalaDesa->id]); // Dedi Kepala Desa (misal)
+        // $eko->positions()->syncWithoutDetaching([$rt1->id]);       // Eko RT 1
+        // $fina->positions()->syncWithoutDetaching([$rt2->id]);      // Fina RT 2
+        // $gilang->positions()->syncWithoutDetaching([$rt3->id]);    // Gilang RT 3
+        
+        $budi->update(['position_id' => $kadusA->id]);
+        $citra->update(['position_id' => $kadusB->id]);
+        $dedi->update(['position_id' => $kepalaDesa->id]); // Dedi Kepala Desa (misal)
+        $eko->update(['position_id' => $rt1->id]);
+        $fina->update(['position_id' => $rt2->id]);
+        $gilang->update(['position_id' => $rt3->id]);
+
 
         // Superadmin gak punya posisi (optional)
     }

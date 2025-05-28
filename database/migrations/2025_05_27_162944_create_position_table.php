@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('positions', function (Blueprint $table) {
             $table->id();
             $table->string('name'); // RT 1, Kadus A, Kepala Desa, dst.
-            $table->string('village_name')->nullable();
+            $table->string('detail')->nullable();
             $table->foreignId('parent_id')->nullable()->constrained('positions')->onDelete('set null');
             $table->timestamps();
         });

@@ -31,11 +31,35 @@ class Position extends Model
     |--------------------------------------------------------------------------
     */
 
+    function structure_hierarchy_button(){
+        return '<a href="'.backpack_url('show-hierarchy').'" class="btn btn-default" data-style="zoom-in"><span class="ladda-label"><i class="la la-bars"></i> Struktur Organisasi</span></a>';
+    }
+
     /*
     |--------------------------------------------------------------------------
     | RELATIONS
     |--------------------------------------------------------------------------
     */
+
+    public function parent()
+    {
+        return $this->belongsTo(Position::class, 'parent_id');
+    }
+
+    public function user()
+    {
+        return $this->hasOne(User::class, 'position_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(Position::class, 'parent_id');
+    }
+
+    public function childrenRecursive()
+    {
+        return $this->children()->with('childrenRecursive');
+    }
 
     /*
     |--------------------------------------------------------------------------

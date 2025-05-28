@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\PositionRequest;
+use App\Models\Position;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
+use Illuminate\Http\Request;
 
 /**
  * Class PositionCrudController
@@ -40,16 +42,53 @@ class PositionCrudController extends CrudController
     protected function setupListOperation()
     {
         CRUD::column('name');
-        CRUD::column('village_name');
-        CRUD::column('parent_id');
+        CRUD::column('detail'); 
+        $this->crud->addColumn([
+            'name' => 'parent_id',
+            'label' => 'Parent',
+            'type' => 'name',
+            'value' => function ($entry) {
+                // return $entry->parent ? $entry->parent->name : '-';
+                return $entry->parent ? $entry->parent->name . ' (' . $this->getParentHierarchy($entry) . ')' : '-';
+            },
+        ]);
+        $this->crud->addColumn([
+            'label' => 'Assigned Users',
+            'type' => 'relationship',
+            'name' => 'assign',
+            'entity' => 'user',
+            'attribute' => 'name',
+            'model' => 'App\Models\User',
+            'wrapper' => [
+                'href' => function ($crud, $column, $entry, $related_key) {
+                    return backpack_url('user/'.$related_key.'/show');
+                },
+            ],
+        ]);
+        // $this->crud->addColumn([
+        //     'name' => 'assign',
+        //     'label' => 'Assigned Users',
+        //     'type' => 'relationship',
+        //     'attribute' => 'name',
+        //     'model' => \App\Models\User::class,
+        //     'pivot' => false, // if you want to show the pivot table data
+        //     'wrapper' => [
+        //         'href' => function ($crud, $column, $entry, $related_key) {
+        //             return backpack_url('user/'.$related_key.'/show');
+        //         },
+        //     ],
+        // ]);
         CRUD::column('created_at');
         CRUD::column('updated_at');
+
+        $this->crud->addButtonFromModelFunction('top', 'structure_hierarchy_button', 'structure_hierarchy_button', 'end');
 
         /**
          * Columns can be defined using the fluent syntax or array syntax:
          * - CRUD::column('price')->type('number');
          * - CRUD::addColumn(['name' => 'price', 'type' => 'number']); 
          */
+        
     }
 
     /**
@@ -63,8 +102,21 @@ class PositionCrudController extends CrudController
         CRUD::setValidation(PositionRequest::class);
 
         CRUD::field('name');
-        CRUD::field('village_name');
-        CRUD::field('parent_id');
+        CRUD::field('detail');
+        // CRUD::field('parent_id');
+        $this->crud->addField([
+            'name' => 'parent_id',
+            'label' => 'Parent Position',
+            'type' => 'select2_from_ajax',
+            'attribute' => 'name',
+            'include_all_form_fields' => true,
+            'entity' => 'parent',
+            'method' => 'POST',
+            'delay' => 500,
+            'data_source' => url('webapi/position/list-parent'),
+            'placeholder' => 'Select a parent position',
+        ]);
+       
 
         /**
          * Fields can be defined using the fluent syntax or array syntax:
@@ -82,5 +134,77 @@ class PositionCrudController extends CrudController
     protected function setupUpdateOperation()
     {
         $this->setupCreateOperation();
+    }
+
+    protected function setupShowOperation()
+    {
+
+        CRUD::column('name');
+        CRUD::column('detail');
+        $this->crud->addColumn([
+            'name' => 'parent_id',
+            'label' => 'Parent',
+            'type' => 'name',
+            'value' => function ($entry) {
+                // return $entry->parent ? $entry->parent->name : '-';
+                return $entry->parent ? $entry->parent->name . ' (' . $this->getParentHierarchy($entry) . ')' : '-';
+            },
+        ]);
+        $this->crud->addColumn([
+            'name' => 'assign',
+            'label' => 'Assigned Users',
+            'type' => 'relationship',
+            'attribute' => 'name',
+            'model' => \App\Models\User::class,
+            'pivot' => false, // if you want to show the pivot table data
+            'entity' => 'user', // the relationship method in the Position model
+        ]);
+        CRUD::column('created_at');
+        CRUD::column(name: 'updated_at');
+    }
+
+    public function showHierarchy()
+    {
+        // Ambil semua posisi yang tidak punya parent (root)
+        $positions = Position::whereNull('parent_id')->with('childrenRecursive')->get();
+
+        return view('positions.structure', compact('positions'));
+    }
+
+
+    public function listParentPositions(Request $request)
+    {
+        $term = $request->input('q');
+        if ($term) {
+            $data = Position::where('name', 'like', '%' . $term . '%')
+                ->orWhere('detail', 'LIKE', '%' . $term . '%')
+                ->where('id', '!=', 1)
+                ->paginate(10);
+        } else {
+            $data = Position::paginate(10);
+        }
+
+        $data->getCollection()->transform(function ($item) {
+            $parentHierarchy = $this->getParentHierarchy($item);
+            return [
+                'id' => $item->id,
+                'name' => $item->name . ($parentHierarchy ? ' (' . $parentHierarchy . ')' : ''),
+            ];
+        });
+
+        return $data;
+    }
+
+    private function getParentHierarchy($position)
+    {
+        $hierarchy = [];
+        $current = $position->parent;
+
+        while ($current) {
+            $hierarchy[] = $current->name;
+            $current = $current->parent;
+        }
+
+        return $hierarchy ? '' . implode(', ', $hierarchy) : '';
     }
 }
