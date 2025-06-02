@@ -2,12 +2,16 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.1",
-        "backpack/crud": "^5.0.0",
-        "backpack/pro": "1.6.3",
+        "backpack/crud": "^6.0",
+        "backpack/pro": "^2.0",
+        "backpack/theme-tabler": "^1.2",
         "guzzlehttp/guzzle": "^7.2",
         "laravel/framework": "^10.10",
         "laravel/sanctum": "^3.2",
@@ -15,7 +19,7 @@
         "tymon/jwt-auth": "^2.0"
     },
     "require-dev": {
-        "backpack/generators": "^3.3",
+        "backpack/generators": "^4.0",
         "fakerphp/faker": "^1.9.1",
         "laravel/pint": "^1.0",
         "laravel/sail": "^1.18",

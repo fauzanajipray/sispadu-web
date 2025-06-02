@@ -29,7 +29,7 @@ class ReportCrudController extends CrudController
     {
         CRUD::setModel(\App\Models\Report::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/report');
-        CRUD::setEntityNameStrings('report', 'reports');
+        CRUD::setEntityNameStrings('laporan', 'laporan');
         // $role = backpack_auth()->user()->role;
         // if(!in_array($role, ['superadmin']))
         // {

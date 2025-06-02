@@ -28,9 +28,9 @@ class PositionCrudController extends CrudController
      */
     public function setup()
     {
-        CRUD::setModel(\App\Models\Position::class);
+        CRUD::setModel(Position::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/position');
-        CRUD::setEntityNameStrings('position', 'positions');
+        CRUD::setEntityNameStrings('Position', 'position');
     }
 
     /**
@@ -160,7 +160,7 @@ class PositionCrudController extends CrudController
             'entity' => 'user', // the relationship method in the Position model
         ]);
         CRUD::column('created_at');
-        CRUD::column(name: 'updated_at');
+        CRUD::column( 'updated_at');
     }
 
     public function showHierarchy()

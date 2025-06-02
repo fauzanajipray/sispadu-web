@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\User;
-use Illuminate\Http\Request;
 use App\Http\Requests\UserRequest;
-use Prologue\Alerts\Facades\Alert;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
+use Illuminate\Http\Request;
 
 /**
  * Class UserCrudController
@@ -32,12 +30,6 @@ class UserCrudController extends CrudController
         CRUD::setModel(\App\Models\User::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/user');
         CRUD::setEntityNameStrings('user', 'users');
-
-        $role = backpack_auth()->user()->role;
-        if(!in_array($role, ['superadmin']))
-        {
-            $this->crud->denyAccess(['list','update', 'create', 'delete']);
-        }
     }
 
     /**
@@ -48,15 +40,13 @@ class UserCrudController extends CrudController
      */
     protected function setupListOperation()
     {
-        $this->crud->addClause('where', 'role', 'superadmin');
-
+        // CRUD::setFromDb(); // set columns from db columns.
         CRUD::column('name');
         CRUD::column('email');
-
+        CRUD::column('role');
         /**
-         * Columns can be defined using the fluent syntax or array syntax:
+         * Columns can be defined using the fluent syntax:
          * - CRUD::column('price')->type('number');
-         * - CRUD::addColumn(['name' => 'price', 'type' => 'number']); 
          */
     }
 
@@ -69,21 +59,11 @@ class UserCrudController extends CrudController
     protected function setupCreateOperation()
     {
         CRUD::setValidation(UserRequest::class);
-
-        CRUD::field('name');
-        CRUD::field('email');
-        CRUD::field('password')->type('password');
-        CRUD::addField(
-            [
-                'name'  => 'role',
-                'type'  => 'hidden',
-                'value' => 'superadmin',
-            ]);
+        CRUD::setFromDb(); // set fields from db columns.
 
         /**
-         * Fields can be defined using the fluent syntax or array syntax:
+         * Fields can be defined using the fluent syntax:
          * - CRUD::field('price')->type('number');
-         * - CRUD::addField(['name' => 'price', 'type' => 'number'])); 
          */
     }
 
@@ -98,39 +78,18 @@ class UserCrudController extends CrudController
         $this->setupCreateOperation();
     }
 
-    public function update(Request $request, $id)
+    public function show(Request $request, $id)
     {
-        $user = User::findOrFail($id);
-        $user->name = $request->input('name');
-        $user->email = $request->input('email');
-        $user->role = $request->input('role');
-        if($request->input('password'))
-        {
-            $user->password = $request->input('password');
-        }
-        else
-        {
-            $user->password = $user->password;
-        }
-        $user->save();
-        Alert::success(trans('backpack::crud.update_success'))->flash();
-        return redirect()->to($this->crud->route);
-    }
+        $this->crud->hasAccessOrFail('show');
+        $this->setupListOperation();
 
-    public function destroy($id)
-    {
-        $user = User::findOrFail($id);
-
-        // Perform your custom validation here
-        if ($user->id === backpack_auth()->user()->id) {
-            $arr['danger'] = ["Failed to delete data. You cannot delete your own account."];
-
-            return $arr;
-        }
-
-        // If validation passes, proceed with deletion
-        $user->delete();
-        Alert::success(trans('User successfully deleted.'))->flash();
-        return true;
+        $this->data['entry'] = $this->crud->getEntry($id);
+        $this->data['crud'] = $this->crud;
+        // $this->data['stocks'] = Stock::join('products', 'products.id', '=', 'stocks.product_id')
+        //     ->where('branch_id', $id)
+        //     ->where('quantity', '>', 0)
+        //     ->select('stocks.*', 'products.*')
+            // ->get();
+        return view('users.show', $this->data);
     }
 }

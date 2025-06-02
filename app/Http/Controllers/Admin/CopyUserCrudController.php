@@ -2,20 +2,19 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\Outlet;
-use App\Models\UserOutlet;
+use App\Models\User;
 use Illuminate\Http\Request;
+use App\Http\Requests\UserRequest;
 use Prologue\Alerts\Facades\Alert;
-use App\Http\Requests\UserOutletRequest;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 
 /**
- * Class UserOutletCrudController
+ * Class UserCrudController
  * @package App\Http\Controllers\Admin
  * @property-read \Backpack\CRUD\app\Library\CrudPanel\CrudPanel $crud
  */
-class UserOutletCrudController extends CrudController
+class CopyUserCrudController extends CrudController
 {
     use \Backpack\CRUD\app\Http\Controllers\Operations\ListOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\CreateOperation;
@@ -30,9 +29,15 @@ class UserOutletCrudController extends CrudController
      */
     public function setup()
     {
-        CRUD::setModel(\App\Models\UserOutlet::class);
-        CRUD::setRoute(config('backpack.base.route_prefix') . '/user-outlet');
-        CRUD::setEntityNameStrings('user outlet', 'user outlets');
+        CRUD::setModel(\App\Models\User::class);
+        CRUD::setRoute(config('backpack.base.route_prefix') . '/user');
+        CRUD::setEntityNameStrings('user', 'users');
+
+        $role = backpack_auth()->user()->role;
+        if(!in_array($role, ['superadmin']))
+        {
+            $this->crud->denyAccess(['list','update', 'create', 'delete']);
+        }
     }
 
     /**
@@ -43,21 +48,10 @@ class UserOutletCrudController extends CrudController
      */
     protected function setupListOperation()
     {
-        CRUD::addColumn(
-            [
-                'name'      => 'outlet_id',
-                'label'     => 'Outlet',
-                'type'        => 'select_from_array',
-                'options'    => Outlet::pluck('name','id'),
-                'attributes' => [
-                    'class' => 'form-control py-1'
-                ]
-            ],
-        );
+        // $this->crud->addClause('where', 'role', 'superadmin');
+
         CRUD::column('name');
         CRUD::column('email');
-        CRUD::column('phone');
-        CRUD::addColumn(['name' => 'status', 'label' => 'Status', 'type' => 'text']); 
 
         /**
          * Columns can be defined using the fluent syntax or array syntax:
@@ -74,24 +68,17 @@ class UserOutletCrudController extends CrudController
      */
     protected function setupCreateOperation()
     {
-        CRUD::setValidation(UserOutletRequest::class);
+        CRUD::setValidation(UserRequest::class);
 
-        CRUD::addField(
-            [
-                'name'      => 'outlet_id',
-                'label'     => 'Outlet',
-                'type'       => 'select_from_array',
-                'options'    => Outlet::pluck('name','id'),
-                'attributes' => [
-                    'class' => 'form-control py-1'
-                ]
-            ],
-        );
         CRUD::field('name');
         CRUD::field('email');
-        CRUD::field('phone');
         CRUD::field('password')->type('password');
-        CRUD::field('is_active')->label('Active');
+        CRUD::addField(
+            [
+                'name'  => 'role',
+                'type'  => 'hidden',
+                'value' => 'superadmin',
+            ]);
 
         /**
          * Fields can be defined using the fluent syntax or array syntax:
@@ -113,12 +100,10 @@ class UserOutletCrudController extends CrudController
 
     public function update(Request $request, $id)
     {
-        $user = UserOutlet::findOrFail($id);
-        $user->name = $request->input('outlet_id');
+        $user = User::findOrFail($id);
         $user->name = $request->input('name');
         $user->email = $request->input('email');
-        $user->phone = $request->input('phone');
-        $user->is_active = $request->input('is_active');
+        $user->role = $request->input('role');
         if($request->input('password'))
         {
             $user->password = $request->input('password');
@@ -130,5 +115,37 @@ class UserOutletCrudController extends CrudController
         $user->save();
         Alert::success(trans('backpack::crud.update_success'))->flash();
         return redirect()->to($this->crud->route);
+    }
+
+    public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+
+        // Perform your custom validation here
+        if ($user->id === backpack_auth()->user()->id) {
+            $arr['danger'] = ["Failed to delete data. You cannot delete your own account."];
+
+            return $arr;
+        }
+
+        // If validation passes, proceed with deletion
+        $user->delete();
+        Alert::success(trans('User successfully deleted.'))->flash();
+        return true;
+    }
+
+    public function show(Request $request, $id)
+    {
+        $this->crud->hasAccessOrFail('show');
+        $this->setupListOperation();
+
+        $this->data['entry'] = $this->crud->getEntry($id);
+        $this->data['crud'] = $this->crud;
+        // $this->data['stocks'] = Stock::join('products', 'products.id', '=', 'stocks.product_id')
+        //     ->where('branch_id', $id)
+        //     ->where('quantity', '>', 0)
+        //     ->select('stocks.*', 'products.*')
+            // ->get();
+        return view('users.show', $this->data);
     }
 }
