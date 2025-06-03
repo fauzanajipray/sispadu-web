@@ -49,4 +49,19 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Position::class, 'position_id');
     }
+
+    // Button
+
+    public function showUpdatePositionButton()
+    {
+        if ($this->role === 'superadmin') {
+            return ''; // Tidak menampilkan tombol jika role adalah superadmin
+        }
+        
+        $buttonText = $this->position_id ? 'Update Jabatan' : 'Tambah Jabatan';
+
+        return '<a href="javascript:void(0);" onclick="showModalForm(' . $this->getKey() . ')" 
+        class="btn btn-sm btn-link" title="' . $buttonText . '">
+        <i class="la la-user-tie"></i> ' . $buttonText . '</a>';
+    }
 }

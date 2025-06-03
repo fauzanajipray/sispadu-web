@@ -42,7 +42,7 @@ class PositionCrudController extends CrudController
     protected function setupListOperation()
     {
         CRUD::column('name');
-        CRUD::column('detail'); 
+        CRUD::column('detail');
         $this->crud->addColumn([
             'name' => 'parent_id',
             'label' => 'Parent',
@@ -61,7 +61,7 @@ class PositionCrudController extends CrudController
             'model' => 'App\Models\User',
             'wrapper' => [
                 'href' => function ($crud, $column, $entry, $related_key) {
-                    return backpack_url('user/'.$related_key.'/show');
+                    return backpack_url('user/' . $related_key . '/show');
                 },
             ],
         ]);
@@ -88,7 +88,6 @@ class PositionCrudController extends CrudController
          * - CRUD::column('price')->type('number');
          * - CRUD::addColumn(['name' => 'price', 'type' => 'number']); 
          */
-        
     }
 
     /**
@@ -116,7 +115,7 @@ class PositionCrudController extends CrudController
             'data_source' => url('webapi/position/list-parent'),
             'placeholder' => 'Select a parent position',
         ]);
-       
+
 
         /**
          * Fields can be defined using the fluent syntax or array syntax:
@@ -160,7 +159,7 @@ class PositionCrudController extends CrudController
             'entity' => 'user', // the relationship method in the Position model
         ]);
         CRUD::column('created_at');
-        CRUD::column( 'updated_at');
+        CRUD::column('updated_at');
     }
 
     public function showHierarchy()
@@ -192,6 +191,36 @@ class PositionCrudController extends CrudController
             ];
         });
 
+        return $data;
+    }
+
+    public function listPositionsWithoutUser(Request $request, $id)
+    {
+        // $id is user_id
+        // make Position whereDoesntHave('user') and include data where relation to user with $id
+
+        $term = $request->input('q');
+
+        $query = Position::whereDoesntHave('user', function ($q) use ($id) {
+            $q->where('id', '!=', $id);
+        })->orWhereHas('user', callback: function ($q) use ($id) {
+            $q->where('id', $id);
+        });
+
+        if ($term) {
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'like', '%' . $term . '%')
+                    ->orWhere('detail', 'LIKE', '%' . $term . '%');
+            });
+        }
+        $data = $query->paginate(10);
+        $data->getCollection()->transform(function ($item) {
+            $parentHierarchy = $this->getParentHierarchy($item);
+            return [
+                'id' => $item->id,
+                'text' => $item->name . ($parentHierarchy ? ' (' . $parentHierarchy . ')' : ''),
+            ];
+        });
         return $data;
     }
 

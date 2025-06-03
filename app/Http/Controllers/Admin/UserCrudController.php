@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\UserRequest;
+use App\Models\User;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
@@ -43,12 +44,91 @@ class UserCrudController extends CrudController
         // CRUD::setFromDb(); // set columns from db columns.
         CRUD::column('name');
         CRUD::column('email');
-        CRUD::column('role');
+        CRUD::addColumn([
+            'name' => 'role',
+            'type' => 'text',
+            'wrapper' => [
+                'element' => 'span',
+                'class' => function ($crud, $column, $entry, $related_key) {
+                    switch ($entry->role) {
+                        case 'superadmin':
+                            return 'badge bg-primary';
+                        case 'user':
+                            return 'badge bg-success';
+                    }
+                },
+            ],
+            'label' => 'Role',
+            'value' => function ($entry) {
+                return $entry->role === 'superadmin' ? 'Super Admin' : 'User';
+            },
+        ]);
+        CRUD::addColumn([
+            'name' => 'position_id',
+            'label' => 'Posisi',
+            'allows_null' => true,
+            'type' => 'text',
+            'value' => fn($entry) => $entry->position ? $entry->position->name . ($this->getParentHierarchy($entry->position) ? ' (' . $this->getParentHierarchy($entry->position) . ')' : '') : '-',
+            'wrapper' => [
+                'href' => function ($crud, $column, $entry, $related_key) {
+                    return backpack_url('position/' . $related_key . '/show');
+                },
+            ],
+        ]);
+
         /**
          * Columns can be defined using the fluent syntax:
          * - CRUD::column('price')->type('number');
          */
+
+        $this->crud->addButtonFromModelFunction('line', 'update_jabatan', 'showUpdatePositionButton', 'beginning');
     }
+
+
+    public function index()
+    {
+        $this->crud->hasAccessOrFail('list');
+        $this->setupListOperation();
+        $this->crud->tabsEnabled();
+
+        $this->data['crud'] = $this->crud;
+
+        return view('users.list', $this->data);
+    }
+
+    public function getData(Request $request, $id)
+    {
+        $this->crud->hasAccessOrFail('list');
+        $this->setupListOperation();
+
+        // Ambil user dengan relasi position
+        $user = User::with('position')->findOrFail($id);
+
+        // Cek apakah posisi tersedia
+        if ($user->position) {
+            $parentHierarchy = $this->getParentHierarchy($user->position);
+            $item = $user->position;
+            $user->position_name = $item->name . ($parentHierarchy ? ' (' . $parentHierarchy . ')' : '');
+        } else {
+            $user->position_name = null;
+        }
+
+        return response()->json($user);
+    }
+
+    private function getParentHierarchy($position)
+    {
+        $hierarchy = [];
+        $current = $position->parent;
+
+        while ($current) {
+            $hierarchy[] = $current->name;
+            $current = $current->parent;
+        }
+
+        return $hierarchy ? implode(', ', $hierarchy) : '';
+    }
+
 
     /**
      * Define what happens when the Create operation is loaded.
@@ -82,14 +162,42 @@ class UserCrudController extends CrudController
     {
         $this->crud->hasAccessOrFail('show');
         $this->setupListOperation();
+        $this->crud->tabsEnabled();
 
         $this->data['entry'] = $this->crud->getEntry($id);
         $this->data['crud'] = $this->crud;
-        // $this->data['stocks'] = Stock::join('products', 'products.id', '=', 'stocks.product_id')
-        //     ->where('branch_id', $id)
-        //     ->where('quantity', '>', 0)
-        //     ->select('stocks.*', 'products.*')
-            // ->get();
+
         return view('users.show', $this->data);
+    }
+
+    public function updatePosition(Request $request)
+    {
+        // Validasi input
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'position_id' => 'nullable|exists:positions,id',
+        ]);
+
+        try {
+            // Ambil user berdasarkan ID
+            $user = User::findOrFail($request->input('user_id'));
+
+            // Perbarui posisi user
+            $user->update([
+                'position_id' => $request->input('position_id'),
+            ]);
+
+            // Kembalikan respons JSON sukses
+            return response()->json([
+                'success' => true,
+                'message' => 'Posisi pengguna berhasil diperbarui.',
+            ]);
+        } catch (\Exception $e) {
+            // Kembalikan respons JSON error
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memperbarui posisi.',
+            ], 500);
+        }
     }
 }

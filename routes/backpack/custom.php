@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\UserCrudController;
 use Illuminate\Support\Facades\Route;
 
 // --------------------------
@@ -16,7 +17,9 @@ Route::group([
     ),
     'namespace'  => 'App\Http\Controllers\Admin',
 ], function () { // custom admin routes
-    // Route::crud('user', 'UserCrudController');
+    Route::crud('user', 'UserCrudController');
+    // Route::get('user/update-position', [UserCrudController::class, 'updatePosition']);
+    Route::post('user/update-position', [UserCrudController::class, 'updatePosition'])->name('user.update-position');
     Route::crud('outlet', 'OutletCrudController');
     Route::crud('position', 'PositionCrudController');
     Route::crud('report', 'ReportCrudController');
@@ -26,11 +29,14 @@ Route::group([
         ->name('position.show-hierarchy');
 
     // API
-    Route::prefix('webapi')->group(function (){
-        Route::prefix('position')->group(function (){
-            Route::post('list-parent', 'PositionCrudController@listParentPositions');
+    Route::prefix('webapi')->name('webapi.')->group(function (){
+        Route::prefix('user')->name('user.')->group(function (){
+            Route::get('{id}', 'UserCrudController@getData')->name('get-data');
+        });
+        Route::prefix('position')->name('position.')->group(function (){
+            Route::post('list-parent', 'PositionCrudController@listParentPositions')->name('list-parent');
+            Route::get('list-without-user/{id}', 'PositionCrudController@listPositionsWithoutUser')->name('list-without-user');
         });
     });
 
-    Route::crud('user', 'UserCrudController');
 }); // this should be the absolute last line of this file
