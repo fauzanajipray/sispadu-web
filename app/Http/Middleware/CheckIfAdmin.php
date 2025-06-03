@@ -28,7 +28,12 @@ class CheckIfAdmin
     private function checkIfUserIsAdmin($user)
     {
         // return ($user->is_admin == 1);
-        return true;
+        $user = auth()->user();
+        if (!$user || ($user->position_id === null || $user->role !== 'superadmin')) {
+            return false;
+        } else{
+            return true;
+        }
     }
 
     /**
@@ -60,6 +65,10 @@ class CheckIfAdmin
         }
 
         if (! $this->checkIfUserIsAdmin(backpack_user())) {
+            backpack_auth()->logout();
+            if (!($request->ajax() || $request->wantsJson())) {
+            \Alert::error('These credentials do not match our records.')->flash();
+            }
             return $this->respondToUnauthorizedRequest($request);
         }
 

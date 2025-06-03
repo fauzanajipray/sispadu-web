@@ -29,7 +29,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Superadmin',
             'email' => 'fauzan@gmail.com',
             'role' => 'superadmin',
-            'password' => 'fauzan99',
+            'password' => 'password',
         ]);
 
         User::updateOrCreate([
@@ -38,7 +38,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Andi Pratama',
             'email' => 'andi@example.com',
             'role' => 'user',
-            'password' => Hash::make('passwordandi'),
+            'password' => Hash::make('password'),
         ]);
 
         // Kadus
@@ -48,7 +48,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Budi Santoso',
             'email' => 'budi@example.com',
             'role' => 'user',
-            'password' => Hash::make('passwordbudi'),
+            'password' => Hash::make('password'),
         ]);
 
         User::updateOrCreate([
@@ -57,7 +57,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Citra Dewi',
             'email' => 'citra@example.com',
             'role' => 'user',
-            'password' => Hash::make('passwordcitra'),
+            'password' => Hash::make('password'),
         ]);
 
         User::updateOrCreate([
@@ -66,7 +66,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Dedi Kurniawan',
             'email' => 'dedi@example.com',
             'role' => 'user',
-            'password' => Hash::make('passworddedi'),
+            'password' => Hash::make('password'),
         ]);
 
         // RT
@@ -76,7 +76,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Eko Wijaya',
             'email' => 'eko@example.com',
             'role' => 'user',
-            'password' => Hash::make('passwordeko'),
+            'password' => Hash::make('password'),
         ]);
 
         User::updateOrCreate([
@@ -85,7 +85,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Fina Maharani',
             'email' => 'fina@example.com',
             'role' => 'user',
-            'password' => Hash::make('passwordfina'),
+            'password' => Hash::make('password'),
         ]);
 
         User::updateOrCreate([
@@ -94,7 +94,16 @@ class DatabaseSeeder extends Seeder
             'name' => 'Gilang Ramadhan',
             'email' => 'gilang@example.com',
             'role' => 'user',
-            'password' => Hash::make('passwordgilang'),
+            'password' => Hash::make('password'),
+        ]);
+
+        User::updateOrCreate([
+            'email' => 'benny@rectmedia.id',
+        ], [
+            'name' => 'Benny',
+            'email' => 'benny@rectmedia.id',
+            'role' => 'user',
+            'password' => Hash::make('password'),
         ]);
     }
 
@@ -137,8 +146,22 @@ class DatabaseSeeder extends Seeder
         Position::updateOrCreate([
             'name' => 'RT 3',
             'detail' => 'Desa Sukamaju',
+            'parent_id' => $kadusA->id,
+        ]);
+
+        // RT dengan parent Kadus A
+        Position::updateOrCreate([
+            'name' => 'RT 1',
+            'detail' => 'Desa Sukamaju',
             'parent_id' => $kadusB->id,
         ]);
+
+        Position::updateOrCreate([
+            'name' => 'RT 2',
+            'detail' => 'Desa Sukamaju',
+            'parent_id' => $kadusB->id,
+        ]);
+
     }
 
 
