@@ -6,6 +6,7 @@ use App\Http\Requests\ReportRequest;
 use App\Models\Report;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
+use Illuminate\Http\Request;
 
 /**
  * Class ReportCrudController
@@ -67,16 +68,18 @@ class ReportCrudController extends CrudController
                 'element' => 'span',
                 'class' => function ($crud, $column, $entry, $related_key) {
                     switch ($entry->status) {
+                        case Report::SUBMITTED:
+                            return 'badge bg-primary';
+                        case Report::PENDING:
+                            return 'badge bg-warning';
                         case Report::SUCCESS:
-                            return 'badge badge-info';
+                            return 'badge bg-success';
                         case Report::REJECTED:
                             return 'badge badge-danger';
-                        case Report::PENDING:
-                            return 'badge badge-warning';
                         case Report::CANCELLED:
                             return 'badge badge-secondary';
                         default:
-                            return 'badge badge-dark';
+                            return 'badge bg-light';
                     }
                 },
             ],
@@ -136,4 +139,21 @@ class ReportCrudController extends CrudController
         return view('reports.show', $this->data);
     }
 
+
+    public function listPositionReports(Request $request, $id)
+    {
+        // $this->crud->hasAccessOrFail('listPositionReports');
+
+        $perPage = $request->get('perPage', 10);
+        $perPage = $perPage == -1 ? 9999 : $perPage;
+
+        $reports = Report::whereHas('dispositions', function ($query) use ($id) {
+            $query->where('to_position_id', $id);
+        })->with('user')->paginate($perPage);
+
+        return response()->json([
+            'rows' => view('reports.partials._report_rows', compact('reports'))->render(),
+            'pagination' => view('reports.partials._report_pagination', compact('reports'))->render()
+        ]);
+    }
 }

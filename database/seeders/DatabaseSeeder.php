@@ -216,7 +216,7 @@ class DatabaseSeeder extends Seeder
         ], [
             'user_id' => $andi->id,
             'content' => 'Jalan di RT 1 sangat rusak dan berlubang, membahayakan warga terutama saat hujan.',
-            'status' => 'pending',
+            'status' => Report::PENDING,
         ]);
 
         Report::updateOrCreate([
@@ -224,7 +224,7 @@ class DatabaseSeeder extends Seeder
         ], [
             'user_id' => $andi->id,
             'content' => 'Lampu jalan di dekat pos RW mati sudah 2 minggu, area gelap dan rawan kecelakaan.',
-            'status' => 'pending',
+            'status' => Report::PENDING,
         ]);
 
         Report::updateOrCreate([
@@ -232,7 +232,7 @@ class DatabaseSeeder extends Seeder
         ], [
             'user_id' => $andi->id,
             'content' => 'Sampah di RT 2 sudah menumpuk selama seminggu, mohon segera diangkut.',
-            'status' => 'pending',
+            'status' => Report::PENDING,
         ]);
 
         Report::updateOrCreate([
@@ -240,8 +240,18 @@ class DatabaseSeeder extends Seeder
         ], [
             'user_id' => $andi->id,
             'content' => 'Ada pohon tumbang di RT 3 yang menghalangi jalan utama.',
-            'status' => 'pending',
+            'status' => Report::PENDING,
         ]);
+
+        Report::updateOrCreate([
+            'title' => 'Jalan Rusak di RT 1',
+        ], [
+            'user_id' => $andi->id,
+            'content' => 'Jalan di RT 1 sangat rusak dan berlubang, membahayakan warga terutama saat hujan.',
+            'status' => Report::SUBMITTED,
+        ]);
+
+
     }
 
     private function seedReportDispositions()

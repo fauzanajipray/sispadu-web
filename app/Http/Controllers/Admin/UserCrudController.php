@@ -28,9 +28,9 @@ class UserCrudController extends CrudController
      */
     public function setup()
     {
-        CRUD::setModel(\App\Models\User::class);
+        CRUD::setModel(User::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/user');
-        CRUD::setEntityNameStrings('user', 'users');
+        CRUD::setEntityNameStrings(__('base.user'), __('users'));
     }
 
     /**
@@ -58,7 +58,7 @@ class UserCrudController extends CrudController
                     }
                 },
             ],
-            'label' => 'Role',
+            'label' => __('base.role'),
             'value' => function ($entry) {
                 return $entry->role === 'superadmin' ? 'Super Admin' : 'User';
             },
@@ -190,13 +190,13 @@ class UserCrudController extends CrudController
             // Kembalikan respons JSON sukses
             return response()->json([
                 'success' => true,
-                'message' => 'Posisi pengguna berhasil diperbarui.',
+                'message' => __('message.user_position_updated'),
             ]);
         } catch (\Exception $e) {
             // Kembalikan respons JSON error
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat memperbarui posisi.',
+                'message' => __('message.user_position_update_failed'),
             ], 500);
         }
     }

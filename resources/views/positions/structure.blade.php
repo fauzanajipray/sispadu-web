@@ -102,7 +102,7 @@
                                             @php
                                                 $assignedUsers = $position->user->name;
                                             @endphp
-                                            <div class="user">Ditugaskan: {{ $assignedUsers ?: '-' }}</div>
+                                            <div class="user">{{ __('base.assigned_to') }}: {{ $assignedUsers ?: '-' }}</div>
                                         </div>
 
                                         @if ($position->childrenRecursive->count())
@@ -115,11 +115,12 @@
                             </ul>
                         </div>
                     @else
-                        <p class="text-muted">Tidak ada data posisi untuk ditampilkan.</p>
+                        <p class="text-muted">{{ __('base.no_data_found') }}</p>
                     @endif
                 </div>
                 <div class="card-footer text-muted d-print-none">
-                    <small>Ditampilkan pada: {{ now()->format('d M Y, H:i') }}</small>
+                    <small>{{ __('base.show_on') }}: {{ now()->format('d M Y, H:i') }}</small>
+                    
                 </div>
             </div>
         </div>

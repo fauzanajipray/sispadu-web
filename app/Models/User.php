@@ -58,7 +58,7 @@ class User extends Authenticatable
             return ''; // Tidak menampilkan tombol jika role adalah superadmin
         }
         
-        $buttonText = $this->position_id ? 'Update Jabatan' : 'Tambah Jabatan';
+        $buttonText = $this->position_id ? __('base.update_position') : __('base.add_position');
 
         return '<a href="javascript:void(0);" onclick="showModalForm(' . $this->getKey() . ')" 
         class="btn btn-sm btn-link" title="' . $buttonText . '">

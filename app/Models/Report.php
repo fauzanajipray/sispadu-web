@@ -30,7 +30,7 @@ class Report extends Model
     const SUCCESS = 'success';
     const REJECTED = 'rejected';
     const CANCELLED = 'cancelled';
-    
+
 
     /*
     |--------------------------------------------------------------------------
@@ -69,6 +69,11 @@ class Report extends Model
     public function images()
     {
         return $this->hasMany(ReportImage::class, 'report_id');
+    }
+
+    public function dispositions()
+    {
+        return $this->hasMany(ReportDisposition::class, 'report_id');
     }
 
     /*

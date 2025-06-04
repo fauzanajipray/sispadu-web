@@ -29,11 +29,13 @@ class CheckIfAdmin
     {
         // return ($user->is_admin == 1);
         $user = auth()->user();
-        if (!$user || ($user->position_id === null || $user->role !== 'superadmin')) {
+        if (!$user || ($user->position_id !== null || $user->role !== 'superadmin')) {
+            // dd('here', !$user, $user->position_id === null, $user->role !== 'superadmin', $user->toArray(), !$user || ($user->position_id === null || $user->role !== 'superadmin'));
             return false;
         } else{
             return true;
         }
+        
     }
 
     /**

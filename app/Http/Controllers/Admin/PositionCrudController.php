@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\PositionRequest;
 use App\Models\Position;
+use App\Models\Report;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
@@ -30,7 +31,7 @@ class PositionCrudController extends CrudController
     {
         CRUD::setModel(Position::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/position');
-        CRUD::setEntityNameStrings('Position', 'position');
+        CRUD::setEntityNameStrings(__('position'), __('positions'));
     }
 
     /**
@@ -45,39 +46,25 @@ class PositionCrudController extends CrudController
         CRUD::column('detail');
         $this->crud->addColumn([
             'name' => 'parent_id',
-            'label' => 'Parent',
+            'label' => __('base.parent'),
             'type' => 'name',
             'value' => function ($entry) {
                 // return $entry->parent ? $entry->parent->name : '-';
                 return $entry->parent ? $entry->parent->name . ' (' . $this->getParentHierarchy($entry) . ')' : '-';
             },
         ]);
-        $this->crud->addColumn([
-            'label' => 'Assigned Users',
-            'type' => 'relationship',
+        CRUD::addColumn([
             'name' => 'assign',
-            'entity' => 'user',
-            'attribute' => 'name',
-            'model' => 'App\Models\User',
+            'label' => __('base.assigned_user'),
+            'allows_null' => true,
+            'type' => 'text',
+            'value' => fn($entry) => $entry->user ? $entry->user->name : '-',
             'wrapper' => [
                 'href' => function ($crud, $column, $entry, $related_key) {
-                    return backpack_url('user/' . $related_key . '/show');
+                    return $entry->user ? backpack_url('user/' . $entry->user->id . '/show') : '';
                 },
             ],
         ]);
-        // $this->crud->addColumn([
-        //     'name' => 'assign',
-        //     'label' => 'Assigned Users',
-        //     'type' => 'relationship',
-        //     'attribute' => 'name',
-        //     'model' => \App\Models\User::class,
-        //     'pivot' => false, // if you want to show the pivot table data
-        //     'wrapper' => [
-        //         'href' => function ($crud, $column, $entry, $related_key) {
-        //             return backpack_url('user/'.$related_key.'/show');
-        //         },
-        //     ],
-        // ]);
         CRUD::column('created_at');
         CRUD::column('updated_at');
 
@@ -113,7 +100,7 @@ class PositionCrudController extends CrudController
             'method' => 'POST',
             'delay' => 500,
             'data_source' => url('webapi/position/list-parent'),
-            'placeholder' => 'Select a parent position',
+            'placeholder' => __('select_parent_position'),
         ]);
 
 
@@ -137,29 +124,47 @@ class PositionCrudController extends CrudController
 
     protected function setupShowOperation()
     {
-
         CRUD::column('name');
         CRUD::column('detail');
         $this->crud->addColumn([
             'name' => 'parent_id',
-            'label' => 'Parent',
+            'label' => __('base.parent'),
             'type' => 'name',
             'value' => function ($entry) {
                 // return $entry->parent ? $entry->parent->name : '-';
                 return $entry->parent ? $entry->parent->name . ' (' . $this->getParentHierarchy($entry) . ')' : '-';
             },
         ]);
-        $this->crud->addColumn([
+        CRUD::addColumn([
             'name' => 'assign',
-            'label' => 'Assigned Users',
-            'type' => 'relationship',
-            'attribute' => 'name',
-            'model' => \App\Models\User::class,
-            'pivot' => false, // if you want to show the pivot table data
-            'entity' => 'user', // the relationship method in the Position model
+            'label' => __('base.assigned_user'),
+            'allows_null' => true,
+            'type' => 'text',
+            'value' => fn($entry) => $entry->user ? $entry->user->name : '-',
+            'wrapper' => [
+                'href' => function ($crud, $column, $entry, $related_key) {
+                    return $entry->user ? backpack_url('user/' . $entry->user->id . '/show') : '';
+                },
+            ],
         ]);
         CRUD::column('created_at');
         CRUD::column('updated_at');
+    }
+
+    public function show(Request $request, $id)
+    {
+        $this->crud->hasAccessOrFail('show');
+        $this->setupListOperation();
+        $this->crud->tabsEnabled();
+
+        $entry = $this->crud->getEntry($id);
+        $this->data['entry'] = $entry;
+        $this->data['crud'] = $this->crud;
+        $this->data['reports'] = Report::whereHas('dispositions', function ($query) use ($entry) {
+            $query->where('to_position_id', $entry->id);
+        })->with('user')->get();
+        
+        return view('positions.show', $this->data);
     }
 
     public function showHierarchy()

@@ -163,18 +163,17 @@
                         <input type="hidden" name="user_id" id="modal_user_id" value="">
 
                         <div class="form-group">
-                            <label for="position_id">Jabatan</label>
+                            <label for="position_id">{{ __('base.position') }}</label>
                             <select class="form-control select2-position" name="position_id" id="position_id"
                                 style="width: 100%">
                                 {{-- biarin kosong, karena nanti isi-nya lewat ajax --}}
                             </select>
                         </div>
 
-
                         {{-- Submit --}}
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                            <button type="submit" class="btn btn-primary">Simpan</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{__('base.cancel')}}</button>
+                            <button type="submit" class="btn btn-primary">{{__('base.save')}}</button>
                         </div>
                     </form>
                 </div>
@@ -238,7 +237,7 @@
 
             // Update URL untuk Select2 dengan user_id
             $('.select2-position').select2({
-                placeholder: 'Cari jabatan...',
+                placeholder: '{{ __('base.select_position') }}',
                 allowClear: true,
                 ajax: {
                     url: '{{ url('webapi/position/list-without-user') }}/' + userId,
@@ -286,23 +285,16 @@
             })
             .then(response => response.json())
             .then(data => {
-                console.log(data);
-                console.log('Data yang dikirim:', Object.fromEntries(formData.entries()));
-                // Cek apakah ada error
-                console.log('Response data:', data);
-                console.log('Response status:', data.success);
-                console.log('Response message:', data.message);
-                
                 if (data.success) {
-                    showNoty('success', data.message || 'Posisi berhasil diperbarui!');
+                    showNoty('success', data.message || '{{ __('base.success_saved') }}');
                     $('#crudModal').modal('hide'); // Tutup modal
                     window.location.reload(); // Reload halaman
                 } else {
-                    showNoty('error', '2 . Terjadi kesalahan saat memperbarui posisissssss.');
+                    showNoty('error', data.message || '{{ __('base.error_occurred') }}'); 
                 }
             })
             .catch(error => {
-                showNoty('error', '1 . Terjadi kesalahan saat memperbarui posisi.');
+                showNoty('error', data.message || '{{ __('base.error_occurred') }}');  
             });
         });
     </script>

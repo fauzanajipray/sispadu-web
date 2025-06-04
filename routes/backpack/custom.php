@@ -20,7 +20,7 @@ Route::group([
     Route::crud('user', 'UserCrudController');
     // Route::get('user/update-position', [UserCrudController::class, 'updatePosition']);
     Route::post('user/update-position', [UserCrudController::class, 'updatePosition'])->name('user.update-position');
-    Route::crud('outlet', 'OutletCrudController');
+    // Route::crud('outlet', 'OutletCrudController');
     Route::crud('position', 'PositionCrudController');
     Route::crud('report', 'ReportCrudController');
     
@@ -36,6 +36,7 @@ Route::group([
         Route::prefix('position')->name('position.')->group(function (){
             Route::post('list-parent', 'PositionCrudController@listParentPositions')->name('list-parent');
             Route::get('list-without-user/{id}', 'PositionCrudController@listPositionsWithoutUser')->name('list-without-user');
+            Route::get('reports/{id}', 'ReportCrudController@listPositionReports')->name('reports');
         });
     });
 
