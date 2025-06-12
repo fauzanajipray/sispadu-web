@@ -7,8 +7,10 @@ use App\Models\Position;
 use App\Models\PositionUser;
 use App\Models\Report;
 use App\Models\ReportDisposition;
+use App\Models\ReportImage; // Import ReportImage model
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class DatabaseSeeder extends Seeder
 {
@@ -19,6 +21,7 @@ class DatabaseSeeder extends Seeder
         $this->seedPositionUsers();
         $this->seedReports();
         $this->seedReportDispositions();
+        $this->seedReportImages(); // Add call to seedReportImages
     }
 
     private function seedUsers()
@@ -275,7 +278,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Write log
-        $this->command->line("Disposisi laporan: {$dispo1->id} {$report1->title} dari Kadus A ke Kepala Desa");
+        // $this->command->line("Disposisi laporan: {$dispo1->id} {$report1->title} dari Kadus A ke Kepala Desa");
 
         $report1->createStatusLog(1, Report::PENDING, 'Laporan diteruskan ke Kepala Desa', null, $dispo1->id);
         $report1->update(['status' => Report::PENDING]);
@@ -315,5 +318,31 @@ class DatabaseSeeder extends Seeder
         //     'note' => 'Pohon tumbang di RT 3 perlu segera dibersihkan.',
         // ]);
         // $report4->update(['status' => Report::PENDING]);
+    }
+
+    private function seedReportImages()
+    {
+        $reports = Report::all();
+
+        foreach ($reports as $report) {
+            // Path untuk menyimpan gambar
+            $imagePath1 = 'images/reports/' . $report->id . '_1.jpg';
+            $imagePath2 = 'images/reports/' . $report->id . '_2.jpg';
+
+            // Salin gambar nyata ke direktori tujuan
+            Storage::disk('public')->put($imagePath1, file_get_contents(base_path('resources/images/sample1.jpg')));
+            Storage::disk('public')->put($imagePath2, file_get_contents(base_path('resources/images/sample2.jpg')));
+
+            // Simpan path ke database
+            ReportImage::updateOrCreate(attributes: [
+                'report_id' => $report->id,
+                'image_path' => $imagePath1,
+            ]);
+
+            ReportImage::updateOrCreate([
+                'report_id' => $report->id,
+                'image_path' => $imagePath2,
+            ]);
+        }
     }
 }

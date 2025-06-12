@@ -178,6 +178,20 @@ class ReportCrudController extends CrudController
         ]);
         CRUD::column('created_at');
         CRUD::column('updated_at');
+        CRUD::addColumn([
+            'name' => 'images', // Relation name
+            'label' => 'Images',
+            'type' => 'custom_html',
+            'value' => function ($entry) {
+                $imagesHtml = '';
+                foreach ($entry->images as $image) {
+                    $imagesHtml .= '<a href="' . $image->image_path . '" target="_blank">
+                                        <img src="' . $image->image_path . '" style="max-width: 100px; height: auto; margin-right: 5px;">
+                                    </a>';
+                }
+                return $imagesHtml;
+            },
+        ]);
     }
 
     public function show($id)

@@ -95,4 +95,15 @@ class ReportImage extends Model
     | MUTATORS
     |--------------------------------------------------------------------------
     */
+
+    public function getImagePathAttribute($value)
+    {
+        
+        if ($value != null) 
+        {
+            return backpack_url('images/' . $this->id);
+        }
+        
+        return null;
+    }
 }

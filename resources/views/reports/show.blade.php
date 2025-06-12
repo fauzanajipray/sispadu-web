@@ -71,7 +71,6 @@
                 </div>
             </div>
         </div>
-{{-- {{ dd(backpack_user()->role == 'superadmin')}} --}}
 
         @if (!$isDone || backpack_user()->role == 'superadmin')
             <div class="col-md-12 mb-2">
