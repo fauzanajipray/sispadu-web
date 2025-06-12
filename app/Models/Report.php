@@ -55,6 +55,19 @@ class Report extends Model
         });
     }
 
+    public function createStatusLog($user_id, $to_status, $note, $position_id = null, $disposition_id = null)
+    {
+        $this->statusLogs()->create([
+            'user_id' => $user_id,
+            'from_status' => $this->status,
+            'position_id' => $position_id, 
+            'to_status' => $to_status,
+            'disposition_id' => $disposition_id,
+            'note' => $note,
+        ]);
+    }
+
+
     /*
     |--------------------------------------------------------------------------
     | RELATIONS
@@ -74,6 +87,11 @@ class Report extends Model
     public function dispositions()
     {
         return $this->hasMany(ReportDisposition::class, 'report_id');
+    }
+
+    public function statusLogs()
+    {
+        return $this->hasMany(ReportStatusLog::class, 'report_id');
     }
 
     /*

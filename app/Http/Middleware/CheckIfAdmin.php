@@ -3,6 +3,9 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use Illuminate\Support\Facades\Facade;
+use Illuminate\Support\Facades\Log as FacadesLog;
+use Log;
 
 class CheckIfAdmin
 {
@@ -29,13 +32,40 @@ class CheckIfAdmin
     {
         // return ($user->is_admin == 1);
         $user = auth()->user();
-        if (!$user || ($user->position_id !== null || $user->role !== 'superadmin')) {
-            // dd('here', !$user, $user->position_id === null, $user->role !== 'superadmin', $user->toArray(), !$user || ($user->position_id === null || $user->role !== 'superadmin'));
+        FacadesLog::info('----Checking if user is admin----', [
+            'user_id' => $user->id ?? null,
+            'position_id' => $user->position_id ?? null,
+            'role' => $user->role ?? null,
+            'email' => $user->email ?? null,
+        ]);
+        if ($user !== null) {
+            FacadesLog::info('User is not null', [
+                'user_id' => $user->id,
+                'role' => $user->role,
+                'position_id' => $user->position_id,
+            ]);
+            if ($user->role === 'superadmin') {
+                FacadesLog::info('User is superadmin', [
+                    'user_id' => $user->id,
+                    'role' => $user->role,
+                ]);
+                return true;
+            } else if ($user->position_id !== null) {
+                FacadesLog::info('User has a position', [
+                    'user_id' => $user->id,
+                    'position_id' => $user->position_id,
+                ]);
+                return true;
+            }
+            FacadesLog::info('User is not admin', [
+                'user_id' => $user->id,
+                'role' => $user->role,
+            ]);
             return false;
-        } else{
-            return true;
+        } else {
+            FacadesLog::info('User is null');
+            return false;
         }
-        
     }
 
     /**
@@ -66,12 +96,18 @@ class CheckIfAdmin
             return $this->respondToUnauthorizedRequest($request);
         }
 
-        if (! $this->checkIfUserIsAdmin(backpack_user())) {
+        if (!$this->checkIfUserIsAdmin(backpack_user())) {
+            FacadesLog::info('----User is not admin, logging out----');
             backpack_auth()->logout();
             if (!($request->ajax() || $request->wantsJson())) {
-            \Alert::error('These credentials do not match our records.')->flash();
+                \Alert::error('These credentials do not match our records.')->flash();
             }
             return $this->respondToUnauthorizedRequest($request);
+        } else {
+            FacadesLog::info('----User is admin, allowing access----', [
+                'user_id' => backpack_user()->id,
+                'role' => backpack_user()->role,
+            ]);
         }
 
         return $next($request);

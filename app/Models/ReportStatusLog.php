@@ -45,7 +45,17 @@ class ReportStatusLog extends Model
      *
      * @var array
      */
-    // protected $fillable = [];
+    protected $fillable = [
+        'report_id',
+        'user_id',
+        'from_status',
+        'to_status',
+        'note',
+        'position_id',
+        'disposition_id',
+        'created_at',
+        'updated_at',
+    ];
 
     /**
      * The attributes that should be hidden for arrays
@@ -72,6 +82,27 @@ class ReportStatusLog extends Model
     | RELATIONS
     |--------------------------------------------------------------------------
     */
+
+    public function report()
+    {
+        return $this->belongsTo(Report::class, 'report_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function position()
+    {
+        return $this->belongsTo(Position::class, 'position_id');
+    }
+
+    public function disposition()
+    {
+        return $this->belongsTo(ReportDisposition::class, 'disposition_id');
+    }
+
 
     /*
     |--------------------------------------------------------------------------

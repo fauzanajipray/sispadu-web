@@ -29,4 +29,5 @@ return [
     'select_parent_position' => 'Pilih jabatan induk',
     'all' => 'Semua',
     'per_page' => 'Masukkan per halaman', // Masukkan per halaman
+    'reported_by' => 'Dilaporkan oleh',
 ];

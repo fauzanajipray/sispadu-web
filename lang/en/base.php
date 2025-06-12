@@ -30,4 +30,5 @@ return [
     'select_parent_position' => 'Select a parent position',
     'all' => 'All',
     'per_page' => 'Per page', // Masukkan per halaman
+    'reported_by' => 'Reported by',
 ];

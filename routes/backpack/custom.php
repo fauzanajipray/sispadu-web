@@ -36,8 +36,15 @@ Route::group([
         Route::prefix('position')->name('position.')->group(function (){
             Route::post('list-parent', 'PositionCrudController@listParentPositions')->name('list-parent');
             Route::get('list-without-user/{id}', 'PositionCrudController@listPositionsWithoutUser')->name('list-without-user');
+            Route::get('list', 'PositionCrudController@listPositions')->name('list');
             Route::get('reports/{id}', 'ReportCrudController@listPositionReports')->name('reports');
         });
+
+        Route::prefix('report')->name('report.')->group(function (){
+            Route::post('confirmation', 'ReportCrudController@confirmReport')->name('confirm-report');
+        });
     });
+
+    // webapi.report.confirmation
 
 }); // this should be the absolute last line of this file

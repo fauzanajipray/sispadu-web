@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\ReportRequest;
 use App\Models\Report;
+use App\Models\ReportDisposition;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Class ReportCrudController
@@ -28,16 +30,20 @@ class ReportCrudController extends CrudController
      */
     public function setup()
     {
-        CRUD::setModel(\App\Models\Report::class);
+        $role = backpack_auth()->user()->role;
+        if ($role == 'superadmin') {
+            // Tampilkan semua data
+        } else {
+            Report::addGlobalScope('user_id', function ($builder) {
+                $builder->whereHas('dispositions', function ($query) {
+                    $query->where('to_position_id', backpack_auth()->user()->position_id)
+                        ->orWhere('from_position_id', backpack_auth()->user()->position_id);
+                });
+            });
+        }
+        CRUD::setModel(Report::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/report');
         CRUD::setEntityNameStrings('laporan', 'laporan');
-        // $role = backpack_auth()->user()->role;
-        // if(!in_array($role, ['superadmin']))
-        // {
-        // $this->crud->denyAccess(['delete', 'create', 'show', 'list', 'update']);
-        // $this->crud->denyAccess(['create', 'update', 'delete', 'list']);
-        // $this->crud->allowAccess(['list', 'show']);
-        // }
     }
 
     /**
@@ -48,9 +54,19 @@ class ReportCrudController extends CrudController
      */
     protected function setupListOperation()
     {
+        $this->setupListColumn();
+        /**
+         * Columns can be defined using the fluent syntax or array syntax:
+         * - CRUD::column('price')->type('number');
+         * - CRUD::addColumn(['name' => 'price', 'type' => 'number']); 
+         */
+    }
+
+    private function setupListColumn()
+    {
         CRUD::addColumn([
             'name' => 'user_id',
-            'label' => 'user',
+            'label' => __('base.reported_by'),
             'type' => 'relationship',
             'entity'    => 'user', // the method that defines the relationship in your Model
             'attribute' => 'name',
@@ -86,13 +102,9 @@ class ReportCrudController extends CrudController
         ]);
         CRUD::column('created_at');
         CRUD::column('updated_at');
-
-        /**
-         * Columns can be defined using the fluent syntax or array syntax:
-         * - CRUD::column('price')->type('number');
-         * - CRUD::addColumn(['name' => 'price', 'type' => 'number']); 
-         */
     }
+
+
 
     /**
      * Define what happens when the Create operation is loaded.
@@ -126,16 +138,70 @@ class ReportCrudController extends CrudController
         $this->setupCreateOperation();
     }
 
+    protected function setupShowOperation()
+    {
+        CRUD::addColumn([
+            'name' => 'user_id',
+            'label' => __('base.reported_by'),
+            'type' => 'relationship',
+            'entity'    => 'user', // the method that defines the relationship in your Model
+            'attribute' => 'name',
+        ]);
+        CRUD::column('user_id');
+        CRUD::column('content')->type('textarea');
+        $this->crud->addColumn([
+            'name' => 'status',
+            'label' => 'Status',
+            'allows_null' => false,
+            'value' => function ($entry) {
+                return strtoupper($entry->status);
+            },
+            'wrapper' => [
+                'element' => 'span',
+                'class' => function ($crud, $column, $entry, $related_key) {
+                    switch ($entry->status) {
+                        case Report::SUBMITTED:
+                            return 'badge bg-primary';
+                        case Report::PENDING:
+                            return 'badge bg-warning';
+                        case Report::SUCCESS:
+                            return 'badge bg-success';
+                        case Report::REJECTED:
+                            return 'badge badge-danger';
+                        case Report::CANCELLED:
+                            return 'badge badge-secondary';
+                        default:
+                            return 'badge bg-light';
+                    }
+                },
+            ],
+        ]);
+        CRUD::column('created_at');
+        CRUD::column('updated_at');
+    }
+
     public function show($id)
     {
         $this->crud->hasAccessOrFail('show');
 
 
-        $this->data['entry'] = $this->crud->getEntry($id);
-        // $this->data['entry'] = Transaction::with('transactionPayments')->findOrFail($id);
+        $entry = $this->crud->getEntry($id);
+        $isAlreadyMakeConfirmation = true;
+        if ( backpack_auth()->user()->role != 'superadmin') {
+            $cekData = $entry->statusLogs()->where('position_id', backpack_auth()->user()->position_id)->first();
+            if (!$cekData) {
+                $isAlreadyMakeConfirmation = false;
+            } else {
+                $isAlreadyMakeConfirmation = true;
+            }
+        }
+
+        $this->data['entry'] = $entry;
         $this->data['crud'] = $this->crud;
-        // $this->data['products'] = TransactionProduct::where('transaction_id', $id)->get();
-        $this->data['products'] = [];
+        $this->data['isDone'] = $entry->status == Report::SUCCESS || $entry->status == Report::REJECTED || $entry->status == Report::CANCELLED || $isAlreadyMakeConfirmation;
+        $this->data['reportHistories'] = $entry->statusLogs()->with(['user', 'position', 'disposition' => function ($query) {
+            $query->with(['fromPosition', 'toPosition']);
+        }])->orderBy('created_at', 'asc')->get();
         return view('reports.show', $this->data);
     }
 
@@ -155,5 +221,72 @@ class ReportCrudController extends CrudController
             'rows' => view('reports.partials._report_rows', compact('reports'))->render(),
             'pagination' => view('reports.partials._report_pagination', compact('reports'))->render()
         ]);
+    }
+
+    public function confirmReport(Request $request)
+    {
+        DB::beginTransaction();
+        try {
+            $report = Report::with(['dispositions', 'statusLogs'])->findOrFail($request->report_id);
+
+            switch ($request->action) {
+                case 'completed':
+                    // dd(backpack_auth()->user()->position_id);
+                    $report->createStatusLog(
+                        backpack_auth()->user()->id,
+                        Report::SUCCESS,
+                        $request->note,
+                        backpack_auth()->user()->position_id
+                    );
+                    $report->status = Report::SUCCESS;
+                    break;
+                case 'rejected':
+                    $report->createStatusLog(
+                        backpack_auth()->user()->id,
+                        Report::REJECTED,
+                        $request->note,
+                        backpack_auth()->user()->position_id
+                    );
+                    $report->status = Report::REJECTED;
+                    break;
+                case 'disposition':
+                    $disposition = ReportDisposition::create([
+                        'report_id' => $report->id,
+                        'from_position_id' => backpack_auth()->user()->position_id,
+                        'to_position_id' => $request->position_id,
+                        'note' => $request->note, // Menyimpan catatan disposisi
+                    ]);
+                    $report->createStatusLog(
+                        backpack_auth()->user()->id,
+                        Report::PENDING,
+                        $request->note,
+                        backpack_auth()->user()->position_id,
+                        $disposition->id // Menyimpan ID disposisi jika ada
+                    );
+                    $report->status = Report::PENDING;
+                    // $report->dispositions()->create([
+                    //     'to_position_id' => $request->position_id,
+                    //     'note' => $request->note, // Menyimpan catatan
+                    // ]);
+                    break;
+            }
+            $report->save();
+            $report = Report::with(['dispositions', 'statusLogs'])->findOrFail($request->report_id);
+            // dd($report->toArray());
+            // throw new \Exception('Debugging: ' . $report->status); // Uncomment this line to debug
+            DB::commit();
+            return response()->json([
+                'success' => true,
+                'message' => 'Laporan berhasil diperbarui.',
+            ]);
+        } catch (\Exception $e) {
+            // dd($e);
+            // throw $e; // Uncomment this line to debug
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui laporan: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

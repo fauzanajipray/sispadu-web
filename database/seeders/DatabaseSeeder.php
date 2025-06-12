@@ -149,16 +149,16 @@ class DatabaseSeeder extends Seeder
             'parent_id' => $kadusA->id,
         ]);
 
-        // RT dengan parent Kadus A
+        // RT dengan parent Kadus B
         Position::updateOrCreate([
             'name' => 'RT 1',
-            'detail' => 'Desa Sukamaju',
+            'detail' => 'Desa Sukamaju, Kadus B',
             'parent_id' => $kadusB->id,
         ]);
 
         Position::updateOrCreate([
             'name' => 'RT 2',
-            'detail' => 'Desa Sukamaju',
+            'detail' => 'Desa Sukamaju, Kadus B',
             'parent_id' => $kadusB->id,
         ]);
 
@@ -216,7 +216,7 @@ class DatabaseSeeder extends Seeder
         ], [
             'user_id' => $andi->id,
             'content' => 'Jalan di RT 1 sangat rusak dan berlubang, membahayakan warga terutama saat hujan.',
-            'status' => Report::PENDING,
+            'status' => Report::SUBMITTED,
         ]);
 
         Report::updateOrCreate([
@@ -224,7 +224,7 @@ class DatabaseSeeder extends Seeder
         ], [
             'user_id' => $andi->id,
             'content' => 'Lampu jalan di dekat pos RW mati sudah 2 minggu, area gelap dan rawan kecelakaan.',
-            'status' => Report::PENDING,
+            'status' => Report::SUBMITTED,
         ]);
 
         Report::updateOrCreate([
@@ -232,7 +232,7 @@ class DatabaseSeeder extends Seeder
         ], [
             'user_id' => $andi->id,
             'content' => 'Sampah di RT 2 sudah menumpuk selama seminggu, mohon segera diangkut.',
-            'status' => Report::PENDING,
+            'status' => Report::SUBMITTED,
         ]);
 
         Report::updateOrCreate([
@@ -240,7 +240,7 @@ class DatabaseSeeder extends Seeder
         ], [
             'user_id' => $andi->id,
             'content' => 'Ada pohon tumbang di RT 3 yang menghalangi jalan utama.',
-            'status' => Report::PENDING,
+            'status' => Report::SUBMITTED,
         ]);
 
         Report::updateOrCreate([
@@ -256,45 +256,57 @@ class DatabaseSeeder extends Seeder
 
     private function seedReportDispositions()
     {
+        // Make Delay to ensure all models are created
+        sleep(1);
         $kepalaDesa = Position::where('name', 'Kepala Desa')->first();
         $kadusA = Position::where('name', 'Kadus A')->first();
         $kadusB = Position::where('name', 'Kadus B')->first();
         $rt2 = Position::where('name', 'RT 2')->first();
         $rt3 = Position::where('name', 'RT 3')->first();
 
-        $report1 = Report::where('title', 'Jalan Rusak di RT 1')->first();
-        $report2 = Report::where('title', 'Lampu Jalan Mati')->first();
-
         // Disposisi laporan dari Kadus A ke Kepala Desa
-        ReportDisposition::updateOrCreate([
+        $report1 = Report::where('title', 'Jalan Rusak di RT 1')->first();
+        $dispo1 = ReportDisposition::updateOrCreate([
             'report_id' => $report1->id,
-            'from_position_id' => $kadusA->id,
+            'from_position_id' => null,
             'to_position_id' => $kepalaDesa->id,
         ], [
             'note' => 'Saya teruskan ke Kepala Desa, mohon diperhatikan.',
         ]);
 
+        // Write log
+        $this->command->line("Disposisi laporan: {$dispo1->id} {$report1->title} dari Kadus A ke Kepala Desa");
+
+        $report1->createStatusLog(1, Report::PENDING, 'Laporan diteruskan ke Kepala Desa', null, $dispo1->id);
+        $report1->update(['status' => Report::PENDING]);
+
         // Disposisi laporan dari Kadus B ke Kepala Desa
-        ReportDisposition::updateOrCreate([
+        $report2 = Report::where('title', 'Lampu Jalan Mati')->first();
+        $dispo2 = ReportDisposition::updateOrCreate([
             'report_id' => $report2->id,
-            'from_position_id' => $kadusB->id,
+            'from_position_id' => null,
             'to_position_id' => $kepalaDesa->id,
         ], [
             'note' => 'Lampu jalan mati perlu diperbaiki secepatnya.',
         ]);
+        $report2->createStatusLog(1, Report::PENDING, 'Laporan diteruskan ke Kepala Desa', null, $dispo2->id);
+        $report2->update(['status' => Report::PENDING]);
 
-        $report3 = Report::where('title', 'Sampah Menumpuk di RT 2')->first();
-        // $report4 = Report::where('title', 'Pohon Tumbang di RT 3')->first();
+
 
         // Disposisi laporan baru
-        ReportDisposition::updateOrCreate([
-            'report_id' => $report3->id,
-            'from_position_id' => $rt2->id,
-            'to_position_id' => $kadusA->id,
-        ], [
-            'note' => 'Mohon segera ditangani, sampah menumpuk di RT 2.',
-        ]);
+        // $report3 = Report::where('title', 'Sampah Menumpuk di RT 2')->first();
+        // ReportDisposition::updateOrCreate([
+        //     'report_id' => $report3->id,
+        //     'from_position_id' => $rt2->id,
+        //     'to_position_id' => $kadusA->id,
+        // ], [
+        //     'note' => 'Mohon segera ditangani, sampah menumpuk di RT 2.',
+        // ]);
+        // $report3->update(['status' => Report::PENDING]);
 
+
+        // $report4 = Report::where('title', 'Pohon Tumbang di RT 3')->first(); 
         // ReportDisposition::updateOrCreate([
         //     'report_id' => $report4->id,
         //     'from_position_id' => $rt3->id,
@@ -302,5 +314,6 @@ class DatabaseSeeder extends Seeder
         // ], [
         //     'note' => 'Pohon tumbang di RT 3 perlu segera dibersihkan.',
         // ]);
+        // $report4->update(['status' => Report::PENDING]);
     }
 }

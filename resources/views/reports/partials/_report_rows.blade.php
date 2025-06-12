@@ -27,7 +27,7 @@
             </span>
         </td>
         <td>
-            <a href="{{ url('report/' . $report->id) }}" class="btn btn-primary btn-sm">
+            <a href="{{ url('report/' . $report->id) }}/show" class="btn btn-primary btn-sm">
                 <i class="la la-eye"></i>
             </a>
         </td>

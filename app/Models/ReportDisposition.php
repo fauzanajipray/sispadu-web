@@ -45,7 +45,14 @@ class ReportDisposition extends Model
      *
      * @var array
      */
-    // protected $fillable = [];
+    protected $fillable = [
+        'report_id',
+        'from_position_id',
+        'to_position_id',
+        'note',
+        'created_at',
+        'updated_at',
+    ];
 
     /**
      * The attributes that should be hidden for arrays
@@ -72,6 +79,20 @@ class ReportDisposition extends Model
     | RELATIONS
     |--------------------------------------------------------------------------
     */
+
+    public function report()
+    {
+        return $this->belongsTo(Report::class, 'report_id');
+    }
+
+    public function fromPosition()
+    {
+        return $this->belongsTo(Position::class, 'from_position_id');
+    }
+    public function toPosition()
+    {
+        return $this->belongsTo(Position::class, 'to_position_id');
+    }
 
     /*
     |--------------------------------------------------------------------------

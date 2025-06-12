@@ -229,6 +229,28 @@ class PositionCrudController extends CrudController
         return $data;
     }
 
+    public function listPositions(Request $request)
+    {
+        $term = $request->input('q');
+        if ($term) {
+            $data = Position::where('name', 'like', '%' . $term . '%')
+                ->orWhere('detail', 'LIKE', '%' . $term . '%')
+                ->paginate(10);
+        } else {
+            $data = Position::paginate(10);
+        }
+
+        $data->getCollection()->transform(function ($item) {
+            $parentHierarchy = $this->getParentHierarchy($item);
+            return [
+                'id' => $item->id,
+                'text' => $item->name . ($parentHierarchy ? ' (' . $parentHierarchy . ')' : ''),
+            ];
+        });
+
+        return $data;
+    }
+
     private function getParentHierarchy($position)
     {
         $hierarchy = [];
