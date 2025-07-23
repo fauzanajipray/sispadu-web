@@ -14,7 +14,7 @@ class CommentController extends Controller
         $comments = Comment::with('user')
             ->where('report_id', $reportId)
             ->orderBy('created_at', 'desc')
-            ->paginate($request->get('per_page', 3));
+            ->paginate($request->get('per_page', 5));
         return response()->json($comments);
     }
 
