@@ -94,6 +94,11 @@ class Report extends Model
         return $this->hasMany(ReportStatusLog::class, 'report_id');
     }
 
+    public function latestStatusLog()
+    {
+        return $this->hasOne(ReportStatusLog::class)->latestOfMany();
+    }
+
     /*
     |--------------------------------------------------------------------------
     | SCOPES

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ReportController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -19,40 +21,32 @@ use Illuminate\Support\Facades\Route;
 // });
 
 Route::group([
-
     'middleware' => ['api', 'assign.guard:api'],
-    'namespace'  => 'App\Http\Controllers\Api',
+    // The 'namespace' key is deprecated in newer Laravel versions.
+    // It's better to use the modern array syntax with full class imports.
+], function () {
+    // --- Public Routes ---
+    Route::post('login', [AuthController::class, 'login']);
+    Route::get('report', [ReportController::class, 'index']);
 
-], function ($router) {
-
-    // AuthController
-    Route::post('login', 'AuthController@login');
-    
     Route::group([
-        'middleware' => ['auth:api', 'is.active:api']
-    ], function() {
-        // AuthController
-        Route::post('logout', 'AuthController@logout');
-        Route::post('me', 'AuthController@me');
+        'middleware' => ['auth:api']
+    ], function () {
+        // --- Authenticated Routes ---
 
+        // Auth
+        Route::post('logout', [AuthController::class, 'logout']);
+        Route::post('me', [AuthController::class, 'me']);
+        Route::get('profile', [AuthController::class, 'profile']);
+        Route::post('profile', [AuthController::class, 'editProfile']);
 
-        Route::get('profile', 'AuthController@profile');
-        Route::post('profile', 'AuthController@editProfile');
-
-        // CategoryController
-        Route::get('category-list', 'CategoryController@list');
-        Route::post('category-add', 'CategoryController@add');
-        Route::post('category-update', 'CategoryController@update');
-        Route::delete('category-delete', 'CategoryController@delete');
-        // Route::resource('category', CategoryController::class);
-
-        // ProductController
-        Route::get('product-list', 'ProductController@list');
-        Route::post('product-add', 'ProductController@add');
-        Route::post('product-update', 'ProductController@update');
-        Route::delete('product-delete', 'ProductController@delete');
-        // Route::resource('category', CategoryController::class);
+        // Reports
+        // The {report} parameter name now matches the $report variable in the controller,
+        // enabling automatic Route Model Binding.
+        Route::get('report/my-reports', [ReportController::class, 'myReports']);
+        Route::post('report', [ReportController::class, 'store']);
+        Route::post('report/{report}/cancel', [ReportController::class, 'cancelReport']);
+        Route::post('report/{report}/action', [ReportController::class, 'processReportAction']);
+        Route::get('report/{report}', [ReportController::class, 'show']);
     });
 });
-
-

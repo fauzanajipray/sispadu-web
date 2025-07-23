@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); // pelapor
             $table->text(column: 'content');
             $table->string('status')->default('pending'); // pending, diteruskan, selesai, dll.
+            $table->unsignedBigInteger('temp_position_id')->nullable(); // posisi sementara untuk laporan kalau user menginputkan posisi
             $table->timestamps();
         });
     }

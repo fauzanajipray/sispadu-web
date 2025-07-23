@@ -13,16 +13,24 @@ class IsActive
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
+    // public function handle(Request $request, Closure $next, $guard = null): Response
+    // {
+    //     if (auth()->user->is_active) {
+    //         return response()->json(['message' => 'Success.']);
+    //     } else {
+    //         return response()->json(['message' => 'Unauthenticated.'], 401);
+    //     }
+    //     return $next($request);
+    // }
+
     public function handle(Request $request, Closure $next, $guard = null): Response
     {
-        if (auth()->user->is_active)
-        {
-            return response()->json(['message' => 'Success.']);
+        $user = auth()->user();
+
+        if ($user && $user->is_active) {
+            return $next($request); // teruskan request kalau aktif
         }
-        else
-        {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
-        }
-        return $next($request);
+
+        return response()->json(['message' => 'Unauthenticated.'], 401);
     }
 }

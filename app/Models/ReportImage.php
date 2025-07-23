@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Model;
 
 class ReportImage extends Model
@@ -45,7 +46,7 @@ class ReportImage extends Model
      *
      * @var array
      */
-    // protected $fillable = [];
+    protected $fillable = ['report_id', 'image_path'];
 
     /**
      * The attributes that should be hidden for arrays
@@ -98,12 +99,9 @@ class ReportImage extends Model
 
     public function getImagePathAttribute($value)
     {
-        
-        if ($value != null) 
-        {
-            return backpack_url('images/' . $this->id);
+        if ($value) {
+            return Storage::disk('public')->url($value);
         }
-        
         return null;
     }
 }

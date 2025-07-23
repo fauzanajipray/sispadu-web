@@ -21,6 +21,14 @@ class AuthController extends Controller
         if (!$token = auth()->attempt($credentials)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
+
+        // Cek role user
+        $user = auth()->user();
+        if ($user->role === 'superadmin') {
+            auth()->logout(); // invalidate token
+            return response()->json(['error' => 'Superadmin tidak dapat login di aplikasi ini'], 403);
+        }
+
         return $this->respondWithToken($token);
     }
 
