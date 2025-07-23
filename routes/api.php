@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\ReportController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -52,5 +53,10 @@ Route::group([
         Route::get('report/{report}', [ReportController::class, 'show']);
         // NOTE: Using POST for updates to simplify multipart/form-data submissions from clients.
         Route::post('report/{report}', [ReportController::class, 'update']);
+
+        Route::get('/reports/{report}/comments', [CommentController::class, 'index']);
+        Route::post('/reports/{report}/comments', [CommentController::class, 'store']);
+        Route::put('/reports/{report}/comments/{comment}', [CommentController::class, 'update']);
+        Route::delete('/reports/{report}/comments/{comment}', [CommentController::class, 'destroy']);
     });
 });
