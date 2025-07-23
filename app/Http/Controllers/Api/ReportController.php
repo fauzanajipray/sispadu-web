@@ -49,6 +49,8 @@ class ReportController extends Controller
                 ->latest()
                 ->take(1)
         )
+        ->where('status', '!=', Report::CANCELLED) // Exclude cancelled reports
+        ->where('status', '!=', Report::SUBMITTED) // Exclude submitted reports
         ->paginate(15);
 
         return response()->json($reports);
