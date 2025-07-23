@@ -36,7 +36,7 @@ class CommentController extends Controller
     public function update(Request $request, $reportId, $id)
     {
         $comment = Comment::where('report_id', $reportId)->findOrFail($id);
-        if ($comment->user_id !== auth()->id()) {
+        if ($comment->user_id != auth()->id()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         $request->validate([
@@ -50,7 +50,7 @@ class CommentController extends Controller
     public function destroy($reportId, $id)
     {
         $comment = Comment::where('report_id', $reportId)->findOrFail($id);
-        if ($comment->user_id !== auth()->id()) {
+        if ($comment->user_id != auth()->id()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         $comment->delete();
