@@ -44,19 +44,19 @@ Route::group([
         Route::post('profile', [AuthController::class, 'editProfile']);
 
         // Reports
-        // The {report} parameter name now matches the $report variable in the controller,
-        // enabling automatic Route Model Binding.
         Route::get('report/my-reports', [ReportController::class, 'myReports']);
         Route::post('report', [ReportController::class, 'store']);
-        Route::post('report/{report}/cancel', [ReportController::class, 'cancelReport']);
+        Route::delete('report/{report}', [ReportController::class, 'cancelReport']);
         Route::post('report/{report}/action', [ReportController::class, 'processReportAction']);
         Route::get('report/{report}', [ReportController::class, 'show']);
         // NOTE: Using POST for updates to simplify multipart/form-data submissions from clients.
         Route::post('report/{report}', [ReportController::class, 'update']);
+        Route::post('report/image', [ReportController::class, 'uploadImage']);
 
-        Route::get('/reports/{report}/comments', [CommentController::class, 'index']);
-        Route::post('/reports/{report}/comments', [CommentController::class, 'store']);
-        Route::put('/reports/{report}/comments/{comment}', [CommentController::class, 'update']);
-        Route::delete('/reports/{report}/comments/{comment}', [CommentController::class, 'destroy']);
+        Route::get('reports/{report}/comments', [CommentController::class, 'index']);
+        Route::post('reports/{report}/comments', [CommentController::class, 'store']);
+        Route::put('reports/{report}/comments/{comment}', [CommentController::class, 'update']);
+        Route::delete('reports/{report}/comments/{comment}', [CommentController::class, 'destroy']);
+        
     });
 });

@@ -33,7 +33,7 @@ class ReportController extends Controller
             $searchTerm = $request->input('search');
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('title', 'like', '%' . $searchTerm . '%')
-                  ->orWhere('content', 'like', '%' . $searchTerm . '%');
+                    ->orWhere('content', 'like', '%' . $searchTerm . '%');
             });
         }
 
@@ -49,9 +49,9 @@ class ReportController extends Controller
                 ->latest()
                 ->take(1)
         )
-        ->where('status', '!=', Report::CANCELLED) // Exclude cancelled reports
-        ->where('status', '!=', Report::SUBMITTED) // Exclude submitted reports
-        ->paginate(15);
+            ->where('status', '!=', Report::CANCELLED) // Exclude cancelled reports
+            ->where('status', '!=', Report::SUBMITTED) // Exclude submitted reports
+            ->paginate(15);
 
         return response()->json($reports);
     }
@@ -105,9 +105,11 @@ class ReportController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'content' => 'required|string',
-            'images' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg|max:2048', // Max 2MB per image
             'temp_position_id' => 'nullable|exists:positions,id', // Validate if the position exists
+            // 'images' => 'nullable|array',
+            // 'images.*' => 'image|mimes:jpeg,png,jpg|max:2048', // Max 2MB per image
+            'images' => 'nullable|array|min:1',
+            'images.*.image_id' => 'required_with:images',
         ]);
 
         if ($validator->fails()) {
@@ -118,7 +120,33 @@ class ReportController extends Controller
 
         DB::beginTransaction();
         try {
-            // 1. Create the report.
+            $indexData = 0;
+            $images = [];
+            $errors = [];
+
+            if ($request->filled('images')) {
+                foreach ($request->images as $key => $image) {
+                    $indexData += 1;
+                    $errorCount = 0;
+                    $img = ReportImage::where('id', $image['image_id'])->first();
+
+                    if ($img == null) {
+                        $errorCount++;
+                        $errors['image_id.' . $key] = [trans('validation.in', ['attribute' => trans('validation.attributes.image_id') . ' ' . $indexData])];
+                    } else {
+                        $images[$img->id] = $img;
+                    }
+                }
+            }
+
+            if (count($errors) != 0) {
+                DB::rollBack();
+                $error = ['errors' => $errors];
+                return response()->json($error, 422);
+            }
+
+
+            // Create the report.
             // The 'created' event in the Report model will automatically create the initial status log.
             $report = Report::create([
                 'user_id' => $user->id,
@@ -128,14 +156,13 @@ class ReportController extends Controller
                 'temp_position_id' => $request->temp_position_id,
             ]);
 
-            // 2. Handle image uploads if they exist.
-            if ($request->hasFile('images')) {
-                foreach ($request->file('images') as $imageFile) {
-                    // Store the image in 'storage/app/public/images/reports'
-                    $path = $imageFile->store('images/reports', 'public');
-
-                    // Create the associated ReportImage record.
-                    $report->images()->create(['image_path' => $path]);
+            if ($request->filled('images')) {
+                foreach ($request->images as $key => $image) {
+                    $img = $images[$image['image_id']];
+                    $reportImages = ReportImage::findOrFail($img->id);
+                    $reportImages->report_id = $report->id;
+                    $reportImages->is_temporary = false;
+                    $reportImages->save();
                 }
             }
 
@@ -179,8 +206,8 @@ class ReportController extends Controller
                     // This prevents the confirmation menu from appearing again after an action has been taken.
                     // This logic is consistent with the $isAlreadyMakeConfirmation check in ReportCrudController.
                     $hasAlreadyActed = $report->statusLogs()
-                                              ->where('position_id', $user->position_id)
-                                              ->exists();
+                        ->where('position_id', $user->position_id)
+                        ->exists();
 
                     if (!$hasAlreadyActed) {
                         $canTakeAction = true;
@@ -327,7 +354,6 @@ class ReportController extends Controller
             DB::commit();
 
             return response()->json(['message' => 'Report action processed successfully.']);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'Failed to process report action.', 'error' => $e->getMessage()], 500);
@@ -354,10 +380,8 @@ class ReportController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'sometimes|required|string|max:255',
             'content' => 'sometimes|required|string',
-            'images' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg|max:2048',
-            'images_to_delete' => 'nullable|array',
-            'images_to_delete.*' => 'integer|exists:report_images,id',
+            'images' => 'nullable|array|min:1',
+            'images.*.image_id' => 'required_with:images',
         ]);
 
         if ($validator->fails()) {
@@ -366,29 +390,55 @@ class ReportController extends Controller
 
         DB::beginTransaction();
         try {
-            // Update text fields if they are present in the request.
-            $report->update($request->only(['title', 'content']));
-
-            // Handle image deletion.
-            if ($request->filled('images_to_delete')) {
-                $imagesToDelete = ReportImage::whereIn('id', $request->input('images_to_delete', []))
-                                             ->where('report_id', $report->id) // Security check
-                                             ->get();
-
-                foreach ($imagesToDelete as $image) {
-                    // Get the raw path from attributes to bypass the URL accessor.
-                    $rawPath = $image->getAttributes()['image_path'];
-                    Storage::disk('public')->delete($rawPath);
-                    $image->delete();
+            $errors = [];
+            $indexData = 0;
+    
+            $incomingImages = collect($request->images ?? []);
+            $incomingImageIds = $incomingImages->pluck('image_id')->filter()->toArray();
+    
+            // Ambil gambar lama
+            $imagesBefore = ReportImage::where('report_id', $id)->get()->keyBy('id');
+    
+            // Cari gambar lama yang tidak ada di list baru (harus dihapus)
+            $imageDeleteIds = $imagesBefore->keys()->diff($incomingImageIds)->toArray();
+    
+            // Hapus file gambar dari storage & DB
+            foreach ($imageDeleteIds as $imgId) {
+                $img = $imagesBefore->get($imgId);
+                if ($img && $img->image_path && Storage::exists($img->getRawOriginal('image_path'))) {
+                    Storage::delete($img->getRawOriginal('image_path'));
                 }
             }
-
-            // Handle new image uploads.
-            if ($request->hasFile('images')) {
-                foreach ($request->file('images') as $imageFile) {
-                    $path = $imageFile->store('images/reports', 'public');
-                    $report->images()->create(['image_path' => $path]);
+            ReportImage::whereIn('id', $imageDeleteIds)->delete();
+    
+            // Validasi gambar baru/lama dari request
+            $validImages = [];
+            foreach ($incomingImages as $key => $image) {
+                $indexData++;
+                $img = ReportImage::find($image['image_id']);
+    
+                if (!$img) {
+                    $errors["image_id.$key"] = [trans('validation.in', [
+                        'attribute' => trans('validation.attributes.image_id') . " $indexData"
+                    ])];
+                } else {
+                    $validImages[$img->id] = $img;
                 }
+            }
+    
+            if (!empty($errors)) {
+                DB::rollBack();
+                return response()->json(['errors' => $errors], 422);
+            }
+
+            // Update text fields if they are present in the request.
+            $report->update($request->only(['title', 'content']));
+    
+            // Update relasi report_id dan flag temporary
+            foreach ($validImages as $img) {
+                $img->report_id = $report->id;
+                $img->is_temporary = false;
+                $img->save();
             }
 
             DB::commit();
@@ -399,6 +449,31 @@ class ReportController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'Failed to update report.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'image_path' => ['required', 'image', 'max:10000'],
+        ]);
+
+        DB::beginTransaction();
+        try {
+
+            $report = new ReportImage();
+            // $reports->report_id = $id;
+            $report->created_by = auth()->user()->id;
+            $report->image_path = $request->image_path;
+            $report->is_temporary = true;
+            $report->save();
+
+            DB::commit();
+
+            return $report;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
         }
     }
 

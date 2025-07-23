@@ -104,4 +104,24 @@ class ReportImage extends Model
         }
         return null;
     }
+
+    public function setImagePathAttribute($value)
+    {
+        $newValue = $value;
+
+        if (isset($value)) {
+            // If the value is a file, store it and set the path
+            if (is_file($value)) {
+                $newValue = $value->store('images/reports', 'public');
+            } elseif (is_string($value) && !empty($value)) {
+                // If it's a string, assume it's a path and use it directly
+                $newValue = $value;
+            } else {
+                // If the value is not valid, set it to null
+                $newValue = null;
+            }
+        }
+
+        $this->attributes['image_path'] = $newValue;
+    }
 }
