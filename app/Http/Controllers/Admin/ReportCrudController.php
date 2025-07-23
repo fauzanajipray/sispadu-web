@@ -201,15 +201,19 @@ class ReportCrudController extends CrudController
 
         $entry = $this->crud->getEntry($id);
         $isAlreadyMakeConfirmation = true;
-        if ( backpack_auth()->user()->role != 'superadmin') {
+        if (backpack_auth()->user()->role != 'superadmin') {
             $cekData = $entry->statusLogs()->where('position_id', backpack_auth()->user()->position_id)->first();
             if (!$cekData) {
                 $isAlreadyMakeConfirmation = false;
             } else {
                 $isAlreadyMakeConfirmation = true;
             }
+        } else{
+            if ($entry->status == Report::SUBMITTED) {
+                $isAlreadyMakeConfirmation = false;
+            } 
         }
-
+        // dd($isAlreadyMakeConfirmation);
         $this->data['entry'] = $entry;
         $this->data['crud'] = $this->crud;
         $this->data['isDone'] = $entry->status == Report::SUCCESS || $entry->status == Report::REJECTED || $entry->status == Report::CANCELLED || $isAlreadyMakeConfirmation;

@@ -72,6 +72,7 @@
             </div>
         </div>
 
+
         @if (!$isDone || backpack_user()->role == 'superadmin')
             <div class="col-md-12 mb-2">
                 <div class="card">
@@ -105,7 +106,7 @@
                                 <textarea class="form-control" name="note" id="note" rows="3" placeholder="Tambahkan catatan" required></textarea>
                             </div>
 
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="button" class="btn btn-secondary">Batal</button>
                             <button type="submit" class="btn btn-primary" form="confirmationForm">Konfirmasi</button>
                         </form>
                     </div>
@@ -117,32 +118,70 @@
                 <div class="card-header">
                     Histori Laporan
                 </div>
+                <div class="card-body">
+                    <div class="row">
+
+                        <div class="col-md-12">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Tanggal</th>
+                                        <th>Tindakan</th>
+                                        <th>Disposisi</th>
+                                        <th>Catatan</th>
+                                        <th>Oleh</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($reportHistories as $history)
+                                        {{-- {{ dd($history) }} --}}
+                                        <tr>
+                                            <td>{{ $history->created_at->format('d-m-Y H:i') }}</td>
+                                            <td>
+                                                @if ($history->from_status != null && $history->to_status != null)
+                                                    {{ $history->from_status }} -> {{ $history->to_status }}
+                                                @elseif ($history->from_status != null)
+                                                    {{ $history->from_status }}
+                                                @elseif ($history->to_status != null)
+                                                    {{ $history->to_status }}
+                                                @else
+                                                    -
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if ($history->disposition_id != null)
+                                                    {{$history->disposition->toPosition->name }}
+                                                @else
+                                                    -
+                                                @endif
+                                            </td>
+                                            <td>{{ $history->note }}</td>
+                                            <td>{{ $history->user->name }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- <div class="col-md-12 mb-2">
+            <div class="card">
+                <div class="card-header">
+                    Histori Laporan
+                </div>
                 <div class="card-body p-3">
                     <ul class="timeline list-unstyled ps-2 mb-0">
-                        {{-- {{ dd($reportHistories->toArray()) }} --}}
                         @foreach ($reportHistories as $index => $history)
                             <li class="timeline-item mb-3 {{ $loop->last ? 'last' : '' }}">
                                 <div class="d-flex align-items-start gap-2">
                                     <div class="timeline-icon mt-1"></div>
                                     <div>
                                         <div class="small text-muted">{{ $history->created_at->format('d-m-Y H:i') }}</div>
-                                        <div class="fw-semibold">
-                                            @if ($history->from_status === 'submitted' && $history->to_status === 'pending')
-                                                Laporan diteruskan ke {{ $history->disposition->toPosition->name }} - {{ $history->disposition->toPosition->detail }}
-                                            @elseif ($history->from_status === 'pending' && $history->to_status === 'pending')
-                                                Laporan di diteruskan ke {{ $history->disposition->toPosition->name }} - {{ $history->disposition->toPosition->detail }}
-                                            @elseif ($history->to_status === 'completed')
-                                                Laporan telah diselesaikan
-                                            @elseif ($history->to_status === 'rejected')
-                                                Laporan ditolak
-                                            @endif
-                                        </div>
-                                        <div class="text-muted small">
-                                            {{ $history->note }}
-                                        </div>
-                                        <div class="text-muted small">Oleh:
-                                            {{ $history->position ? $history->position->name : $history->user->name }}
-                                        </div>
+                                        <div class="fw-semibold">Report created with status {{ $history->status }}</div>
+                                        <div class="text-muted small">Oleh: {{ $history->user->name }}</div>
                                     </div>
                                 </div>
                             </li>
@@ -150,11 +189,8 @@
                     </ul>
                 </div>
             </div>
-        </div>
+        </div> --}}
     </div>
-
-
-
 
 @endsection
 
@@ -209,50 +245,48 @@
             }).show();
         }
 
-        $('.select2-position').select2({
-            placeholder: '{{ __('base.select_position') }}',
-            allowClear: true,
-            ajax: {
-                url: '{{ url('webapi/position/list') }}',
-                dataType: 'json',
-                delay: 250,
-                type: 'GET',
-                data: function(params) {
-                    return {
-                        q: params.term,
-                        page: params.page || 1
-                    };
-                },
-                processResults: function(data, params) {
-                    params.page = params.page || 1;
-                    let results = data.data.map(function(item) {
-                        return {
-                            id: item.id,
-                            text: item.text
-                        };
-                    });
-
-                    return {
-                        results: results,
-                        pagination: {
-                            more: data.next_page_url !== null
-                        }
-                    };
-                },
-                cache: true
-            }
-        });
-
         document.getElementById('action').addEventListener('change', function() {
             const dispositionGroup = document.querySelector('.disposition-group');
             const noteInput = document.getElementById('note');
 
             if (this.value === 'disposition') {
                 dispositionGroup.classList.remove('d-none');
+
+                $('.select2-position').select2({
+                    placeholder: '{{ __('base.select_position') }}',
+                    allowClear: true,
+                    ajax: {
+                        url: '{{ url('webapi/position/list') }}',
+                        dataType: 'json',
+                        delay: 250,
+                        type: 'GET',
+                        data: function(params) {
+                            return {
+                                q: params.term,
+                                page: params.page || 1
+                            };
+                        },
+                        processResults: function(data, params) {
+                            params.page = params.page || 1;
+                            let results = data.data.map(function(item) {
+                                return {
+                                    id: item.id,
+                                    text: item.text
+                                };
+                            });
+
+                            return {
+                                results: results,
+                                pagination: {
+                                    more: data.next_page_url !== null
+                                }
+                            };
+                        },
+                        cache: true
+                    }
+                });
             } else {
                 dispositionGroup.classList.add('d-none');
-
-
             }
 
             // Fix the condition to use OR (||) instead of AND (&&)
@@ -263,31 +297,29 @@
             }
         });
 
-        document.querySelector('#confirmationForm').addEventListener('submit', function(event) {
+        document.getElementById('confirmationForm').addEventListener('submit', function(event) {
             event.preventDefault(); // Mencegah form dari reload halaman
             const formData = new FormData(this);
-            console.log('Form data:', formData);
-            console.log('Action:', this.action);
-
-            fetch('{{ route('webapi.report.confirm-report') }}', {
+            fetch(this.action, {
                     method: 'POST',
                     headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
-                            'content')
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
                     },
                     body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        showNoty('success', data.message || '{{ __('base.success_saved') }}');
+                        showNoty('success', data.message || 'Laporan berhasil diperbarui.');
                         window.location.reload();
                     } else {
-                        showNoty('error', data.message || '{{ __('base.error_saving') }}');
+                        showNoty('error', data.message || 'Gagal memperbarui laporan.');
                     }
                 })
                 .catch(error => {
-                    showNoty('error', data.message || '{{ __('base.error_saving') }}');
+                    showNoty('error', 'Terjadi kesalahan. Silakan coba lagi.');
+                    console.error('Error:', error);
                 });
         });
     </script>

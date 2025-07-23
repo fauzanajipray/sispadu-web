@@ -35,6 +35,10 @@ Route::group([
         Route::post('logout', 'AuthController@logout');
         Route::post('me', 'AuthController@me');
 
+
+        Route::get('profile', 'AuthController@profile');
+        Route::post('profile', 'AuthController@editProfile');
+
         // CategoryController
         Route::get('category-list', 'CategoryController@list');
         Route::post('category-add', 'CategoryController@add');
