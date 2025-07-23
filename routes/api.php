@@ -27,6 +27,7 @@ Route::group([
 ], function () {
     // --- Public Routes ---
     Route::post('login', [AuthController::class, 'login']);
+    Route::post('register', [AuthController::class, 'register']);
     Route::get('report', [ReportController::class, 'index']);
 
     Route::group([
@@ -48,5 +49,7 @@ Route::group([
         Route::post('report/{report}/cancel', [ReportController::class, 'cancelReport']);
         Route::post('report/{report}/action', [ReportController::class, 'processReportAction']);
         Route::get('report/{report}', [ReportController::class, 'show']);
+        // NOTE: Using POST for updates to simplify multipart/form-data submissions from clients.
+        Route::post('report/{report}', [ReportController::class, 'update']);
     });
 });

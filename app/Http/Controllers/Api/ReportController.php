@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\ReportDisposition;
 use App\Models\ReportStatusLog;
 use App\Models\Report;
+use App\Models\ReportImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 
 class ReportController extends Controller
 {
@@ -335,7 +337,67 @@ class ReportController extends Controller
      */
     public function update(Request $request, Report $report)
     {
-        //
+        $user = auth()->user();
+
+        // 1. Authorization: Ensure the user owns the report and it's in a modifiable state.
+        if ($report->user_id !== $user->id) {
+            return response()->json(['message' => 'You are not authorized to edit this report.'], 403);
+        }
+
+        if ($report->status !== Report::SUBMITTED) {
+            return response()->json(['message' => 'This report cannot be edited as it is already being processed.'], 422);
+        }
+
+        // 2. Validation
+        $validator = Validator::make($request->all(), [
+            'title' => 'sometimes|required|string|max:255',
+            'content' => 'sometimes|required|string',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg|max:2048',
+            'images_to_delete' => 'nullable|array',
+            'images_to_delete.*' => 'integer|exists:report_images,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            // Update text fields if they are present in the request.
+            $report->update($request->only(['title', 'content']));
+
+            // Handle image deletion.
+            if ($request->filled('images_to_delete')) {
+                $imagesToDelete = ReportImage::whereIn('id', $request->input('images_to_delete', []))
+                                             ->where('report_id', $report->id) // Security check
+                                             ->get();
+
+                foreach ($imagesToDelete as $image) {
+                    // Get the raw path from attributes to bypass the URL accessor.
+                    $rawPath = $image->getAttributes()['image_path'];
+                    Storage::disk('public')->delete($rawPath);
+                    $image->delete();
+                }
+            }
+
+            // Handle new image uploads.
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $imageFile) {
+                    $path = $imageFile->store('images/reports', 'public');
+                    $report->images()->create(['image_path' => $path]);
+                }
+            }
+
+            DB::commit();
+
+            // Return the updated report with its relations.
+            $report->load(['user:id,name', 'images']);
+            return response()->json($report);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Failed to update report.', 'error' => $e->getMessage()], 500);
+        }
     }
 
     /**
