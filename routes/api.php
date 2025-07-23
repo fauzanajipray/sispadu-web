@@ -29,6 +29,7 @@ Route::group([
     Route::post('login', [AuthController::class, 'login']);
     Route::post('register', [AuthController::class, 'register']);
     Route::get('report', [ReportController::class, 'index']);
+    Route::get('p/report/{report}', [ReportController::class, 'show']);
 
     Route::group([
         'middleware' => ['auth:api']
