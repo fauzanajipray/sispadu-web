@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('report_id')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
-            $table->string('image_path');
+            $table->string('image_path')->nullable();
             $table->boolean('is_temporary')->default(false);
             $table->timestamps();
 
