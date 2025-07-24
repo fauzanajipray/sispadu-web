@@ -325,24 +325,42 @@ class DatabaseSeeder extends Seeder
         $reports = Report::all();
 
         foreach ($reports as $report) {
-            // Path untuk menyimpan gambar
-            $imagePath1 = 'images/reports/' . $report->id . '_1.jpg';
-            $imagePath2 = 'images/reports/' . $report->id . '_2.jpg';
+            // 1. Buat record kosong dulu untuk dapatkan id
+            $reportImage1 = new ReportImage();
+            $reportImage1->report_id = $report->id;
+            $reportImage1->created_by = $report->user_id ?? 1;
+            $reportImage1->is_temporary = false;
+            $reportImage1->save();
 
-            // Salin gambar nyata ke direktori tujuan
+            $reportImage2 = new ReportImage();
+            $reportImage2->report_id = $report->id;
+            $reportImage2->created_by = $report->user_id ?? 1;
+            $reportImage2->is_temporary = false;
+            $reportImage2->save();
+
+            // 2. Generate nama file: {id}_{timestamp}_{random}.jpg
+            $id1 = $reportImage1->id;
+            $id2 = $reportImage2->id;
+            $timestamp = now()->timestamp;
+            $random1 = mt_rand(100000, 999999);
+            $random2 = mt_rand(100000, 999999);
+
+            $filename1 = "{$id1}_{$timestamp}_{$random1}.jpg";
+            $filename2 = "{$id2}_{$timestamp}_{$random2}.jpg";
+
+            // 3. Salin gambar nyata ke storage
+            $imagePath1 = "images/reports/{$filename1}";
+            $imagePath2 = "images/reports/{$filename2}";
+
             Storage::disk('public')->put($imagePath1, file_get_contents(base_path('resources/images/sample1.jpg')));
             Storage::disk('public')->put($imagePath2, file_get_contents(base_path('resources/images/sample2.jpg')));
 
-            // Simpan path ke database
-            ReportImage::updateOrCreate(attributes: [
-                'report_id' => $report->id,
-                'image_path' => $imagePath1,
-            ]);
+            // 4. Update path di database
+            $reportImage1->image_path = $imagePath1;
+            $reportImage1->save();
 
-            ReportImage::updateOrCreate([
-                'report_id' => $report->id,
-                'image_path' => $imagePath2,
-            ]);
+            $reportImage2->image_path = $imagePath2;
+            $reportImage2->save();
         }
     }
 }

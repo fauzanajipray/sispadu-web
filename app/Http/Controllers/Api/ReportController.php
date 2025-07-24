@@ -460,20 +460,33 @@ class ReportController extends Controller
 
         DB::beginTransaction();
         try {
+            // 1. Simpan dulu record kosong untuk dapatkan id
+            $reportImage = new ReportImage();
+            $reportImage->created_by = auth()->user()->id;
+            $reportImage->is_temporary = true;
+            $reportImage->save();
 
-            $report = new ReportImage();
-            // $reports->report_id = $id;
-            $report->created_by = auth()->user()->id;
-            $report->image_path = $request->image_path;
-            $report->is_temporary = true;
-            $report->save();
+            // 2. Generate nama file: {id}_{timestamp}_{random}.{ext}
+            $file = $request->file('image_path');
+            $id = $reportImage->id;
+            $timestamp = now()->timestamp;
+            $random = mt_rand(100000, 999999);
+            $ext = $file->getClientOriginalExtension();
+            $filename = "{$id}_{$timestamp}_{$random}.{$ext}";
+
+            // 3. Simpan file ke storage
+            $path = $file->storeAs('images/reports', $filename, 'public');
+
+            // 4. Update image_path di DB
+            $reportImage->image_path = $path;
+            $reportImage->save();
 
             DB::commit();
 
-            return $report;
+            return response()->json($reportImage, 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            throw $e;
+            return response()->json(['message' => 'Failed to upload image', 'error' => $e->getMessage()], 500);
         }
     }
 
