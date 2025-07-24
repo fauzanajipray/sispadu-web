@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Position;
 use App\Models\ReportDisposition;
 use App\Models\ReportStatusLog;
 use App\Models\Report;
@@ -579,5 +580,36 @@ class ReportController extends Controller
         }
 
         return response()->json($reports);
+    }
+
+    public function positionList(Request $request)
+    {
+       // Get All Positions pagination
+        $positions = Position::paginate(15);
+
+        // Format the response to include the position hierarchy
+        foreach ($positions as $position) {
+            $parentHierarchy = $this->getParentHierarchy($position);
+            $position->text = $position->name . ($parentHierarchy ? ' (' . $parentHierarchy . ')' : '');
+        }
+
+        return response()->json($positions);
+    }
+
+    public function positionListWithoutMe(Request $request)
+    {
+        // Get All Positions pagination excluding the current user's position
+        // If user don't have position, forbidden
+        $user = auth()->user();
+        if (!$user->position_id) {
+            return response()->json(['message' => 'You do not have a position assigned.'], 403);
+        }   
+        $positions = Position::where('id', '!=', $user->position_id)->paginate(15);
+        // Format the response to include the position hierarchy
+        foreach ($positions as $position) {
+            $parentHierarchy = $this->getParentHierarchy($position);
+            $position->text = $position->name . ($parentHierarchy ? ' (' . $parentHierarchy . ')' : '');
+        }
+        return response()->json($positions);
     }
 }

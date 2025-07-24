@@ -59,8 +59,9 @@ Route::group([
         Route::post('reports/{report}/comments', [CommentController::class, 'store']);
         Route::put('reports/{report}/comments/{comment}', [CommentController::class, 'update']);
         Route::delete('reports/{report}/comments/{comment}', [CommentController::class, 'destroy']);
-        
 
 
+        Route::get('positions', [ReportController::class, 'positionList']);
+        Route::get('positions-without-me', [ReportController::class, 'positionListWithoutMe']);
     });
 });
