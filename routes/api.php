@@ -43,10 +43,12 @@ Route::group([
         Route::get('profile', [AuthController::class, 'profile']);
         Route::post('profile', [AuthController::class, 'editProfile']);
 
+        
         // Reports
         
         Route::post('report/image', [ReportController::class, 'uploadImage']);
         Route::get('report/my-reports', [ReportController::class, 'myReports']);
+        Route::get('report/position-report', [ReportController::class, 'positionReports']);
         Route::post('report', [ReportController::class, 'store']);
         Route::delete('report/{report}', [ReportController::class, 'cancelReport']);
         Route::post('report/{report}/action', [ReportController::class, 'processReportAction']);
@@ -58,5 +60,7 @@ Route::group([
         Route::put('reports/{report}/comments/{comment}', [CommentController::class, 'update']);
         Route::delete('reports/{report}/comments/{comment}', [CommentController::class, 'destroy']);
         
+
+
     });
 });

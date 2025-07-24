@@ -523,4 +523,61 @@ class ReportController extends Controller
     {
         //
     }
+
+    public function positionReports(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user->position_id) {
+            return response()->json(['message' => 'You do not have a position assigned.'], 403);
+        }
+
+        $reports = Report::with([
+            'user:id,name',
+            'images',
+            'latestStatusLog.user:id,name',
+            'latestStatusLog.position:id,name',
+        ])
+            ->whereHas('dispositions', function ($query) use ($user) {
+                $query->where('to_position_id', $user->position_id);
+            })
+            ->orderByDesc(
+                ReportStatusLog::select('created_at')
+                    ->whereColumn('report_id', 'reports.id')
+                    ->latest()
+                    ->take(1)
+            )
+            ->paginate(15);
+
+        foreach ($reports as $report) {
+            $latestDisposition = $report->dispositions()->latest()->first();
+            $isFinalState = in_array($report->status, [
+                Report::SUCCESS,
+                Report::REJECTED,
+                Report::CANCELLED,
+            ]);
+            $hasAlreadyActed = $report->statusLogs()
+                ->where('position_id', $user->position_id)
+                ->exists();
+
+            $report->can_take_action = false;
+            if (
+                !$isFinalState &&
+                $latestDisposition &&
+                $latestDisposition->to_position_id == $user->position_id &&
+                !$hasAlreadyActed
+            ) {
+                $report->can_take_action = true;
+            }
+        }
+
+        // Filter jika param can_take_action diberikan
+        if ($request->filled('can_take_action') && $request->can_take_action) {
+            $reports = $reports->filter(function ($report) {
+                return $report->can_take_action;
+            })->values();
+        }
+
+        return response()->json($reports);
+    }
 }
