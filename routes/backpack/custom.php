@@ -34,6 +34,7 @@ Route::group([
             Route::get('{id}', 'UserCrudController@getData')->name('get-data');
         });
         Route::prefix('position')->name('position.')->group(function (){
+            Route::get('detail/{id}', 'PositionCrudController@getDetail')->name('detail');
             Route::post('list-parent', 'PositionCrudController@listParentPositions')->name('list-parent');
             Route::get('list-without-user/{id}', 'PositionCrudController@listPositionsWithoutUser')->name('list-without-user');
             Route::get('list', 'PositionCrudController@listPositions')->name('list');

@@ -244,17 +244,8 @@ class DatabaseSeeder extends Seeder
             'user_id' => $andi->id,
             'content' => 'Ada pohon tumbang di RT 3 yang menghalangi jalan utama.',
             'status' => Report::SUBMITTED,
+            'temp_position_id' => Position::where('name', 'RT 3')->first()->id,
         ]);
-
-        Report::updateOrCreate([
-            'title' => 'Jalan Rusak di RT 1',
-        ], [
-            'user_id' => $andi->id,
-            'content' => 'Jalan di RT 1 sangat rusak dan berlubang, membahayakan warga terutama saat hujan.',
-            'status' => Report::SUBMITTED,
-        ]);
-
-
     }
 
     private function seedReportDispositions()
@@ -281,7 +272,7 @@ class DatabaseSeeder extends Seeder
         // $this->command->line("Disposisi laporan: {$dispo1->id} {$report1->title} dari Kadus A ke Kepala Desa");
 
         $report1->createStatusLog(1, Report::PENDING, 'Laporan diteruskan ke Kepala Desa', null, $dispo1->id);
-        $report1->update(['status' => Report::PENDING]);
+        $report1->update(['status' => Report::PENDING, 'temp_position_id' => $kepalaDesa->id]);
 
         // Disposisi laporan dari Kadus B ke Kepala Desa
         $report2 = Report::where('title', 'Lampu Jalan Mati')->first();
@@ -293,7 +284,7 @@ class DatabaseSeeder extends Seeder
             'note' => 'Lampu jalan mati perlu diperbaiki secepatnya.',
         ]);
         $report2->createStatusLog(1, Report::PENDING, 'Laporan diteruskan ke Kepala Desa', null, $dispo2->id);
-        $report2->update(['status' => Report::PENDING]);
+        $report2->update(['status' => Report::PENDING, 'temp_position_id' => $kepalaDesa->id]);
 
 
 

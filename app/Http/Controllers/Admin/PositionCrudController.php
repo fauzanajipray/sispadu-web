@@ -251,6 +251,18 @@ class PositionCrudController extends CrudController
         return $data;
     }
 
+    public function getDetail($id)
+    {
+        $position = Position::findOrFail($id);
+        $parentHierarchy = $this->getParentHierarchy($position);
+
+        return response()->json([
+            'id' => $position->id,
+            'name' => $position->name,
+            'text' => $position->name . ($parentHierarchy ? ' (' . $parentHierarchy . ')' : ''),
+        ]);
+    }
+
     private function getParentHierarchy($position)
     {
         $hierarchy = [];

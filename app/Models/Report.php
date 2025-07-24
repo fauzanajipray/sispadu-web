@@ -79,6 +79,11 @@ class Report extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function position()
+    {
+        return $this->belongsTo(Position::class, 'temp_position_id');
+    }
+
     public function images()
     {
         return $this->hasMany(ReportImage::class, 'report_id');

@@ -282,6 +282,7 @@ class ReportCrudController extends CrudController
                         $disposition->id // Menyimpan ID disposisi jika ada
                     );
                     $report->status = Report::PENDING;
+                    $report->temp_position_id = $request->position_id; 
                     // $report->dispositions()->create([
                     //     'to_position_id' => $request->position_id,
                     //     'note' => $request->note, // Menyimpan catatan

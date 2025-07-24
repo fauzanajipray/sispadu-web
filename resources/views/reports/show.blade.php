@@ -96,7 +96,8 @@
                             <div class="form-group disposition-group d-none">
                                 <label for="position_id">Disposisi ke:</label>
                                 <select class="form-control select2-position" name="position_id" id="position_id"
-                                    style="width: 100%">
+                                    style="width: 100%"
+                                    data-default-position="{{ $entry->status == 'submitted' ? $entry->temp_position_id : '' }}">
                                     {{-- Isi melalui AJAX --}}
                                 </select>
                             </div>
@@ -150,7 +151,7 @@
                                             </td>
                                             <td>
                                                 @if ($history->disposition_id != null)
-                                                    {{$history->disposition->toPosition->name }}
+                                                    {{ $history->disposition->toPosition->name }}
                                                 @else
                                                     -
                                                 @endif
@@ -284,6 +285,21 @@
                         },
                         cache: true
                     }
+                }).on('select2:open', function() {
+                    // Set default value jika ada
+                    const select = $(this);
+                    const defaultPosition = select.data('default-position');
+                    if (defaultPosition) {
+                        // Fetch data posisi default via AJAX jika belum ada di list
+                        $.ajax({
+                            url: '{{ url('webapi/position/detail') }}/' + defaultPosition,
+                            dataType: 'json',
+                            success: function(data) {
+                                const option = new Option(data.text, data.id, true, true);
+                                select.append(option).trigger('change');
+                            }
+                        });
+                    }
                 });
             } else {
                 dispositionGroup.classList.add('d-none');
@@ -298,9 +314,25 @@
         });
 
         document.getElementById('confirmationForm').addEventListener('submit', function(event) {
+            const actionValue = document.getElementById('action').value;
+            const positionSelect = document.getElementById('position_id');
+
+            // Jika action disposition, pastikan position_id terisi
+            if (actionValue === 'disposition') {
+                if (!positionSelect.value) {
+                    showNoty('error', 'Silakan pilih jabatan disposisi terlebih dahulu.');
+                    positionSelect.focus();
+                    event.preventDefault();
+                    return false;
+                }
+            }
+
             event.preventDefault(); // Mencegah form dari reload halaman
             const formData = new FormData(this);
-            fetch(this.action, {
+            var actionUrl = document.getElementById('confirmationForm').getAttribute('action');
+            console.log(actionUrl);
+
+            fetch(actionUrl, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',

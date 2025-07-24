@@ -68,6 +68,7 @@ class ReportController extends Controller
             ->with([
                 'user:id,name', // The user who created the report (which is the current user)
                 'images', // Report images with full URL path
+                'position',
                 'latestStatusLog.user:id,name', // The user who last updated the status
                 'latestStatusLog.position:id,name', // The position of the user who last updated
             ]);
@@ -220,6 +221,7 @@ class ReportController extends Controller
         $report->load([
             'user:id,name', // The user who created the report
             'images', // Report images with full URL path
+            'position',
             'statusLogs' => function ($query) {
                 $query->with([
                     'user:id,name', // User who created the log
@@ -235,9 +237,32 @@ class ReportController extends Controller
         // Add the 'can_take_action' flag to the response object.
         // The mobile app can use this to decide whether to show the confirmation/disposition menu.
         $report->can_take_action = $canTakeAction;
+        // GET HIRARCHY IF POSITION EXISTS (temp_position_id)
+        $position = null;
+        if (isset($report->position)) {
+            $position = $report->position;
+            $parentHierarchy = $this->getParentHierarchy($position);
+            $position->text = $position->name . ($parentHierarchy ? ' (' . $parentHierarchy . ')' : '');
+        } else {
+            $position = null; // If no position, set to null
+        }
+        $report->position = $position;
 
         // Return the report data as a JSON response.
         return response()->json($report);
+    }
+
+    private function getParentHierarchy($position)
+    {
+        $hierarchy = [];
+        $current = $position->parent;
+
+        while ($current) {
+            $hierarchy[] = $current->name;
+            $current = $current->parent;
+        }
+
+        return $hierarchy ? '' . implode(', ', $hierarchy) : '';
     }
 
     /**
@@ -392,16 +417,16 @@ class ReportController extends Controller
         try {
             $errors = [];
             $indexData = 0;
-    
+
             $incomingImages = collect($request->images ?? []);
             $incomingImageIds = $incomingImages->pluck('image_id')->filter()->toArray();
-    
+
             // Ambil gambar lama
             $imagesBefore = ReportImage::where('report_id', $report->id)->get()->keyBy('id');
-    
+
             // Cari gambar lama yang tidak ada di list baru (harus dihapus)
             $imageDeleteIds = $imagesBefore->keys()->diff($incomingImageIds)->toArray();
-    
+
             // Hapus file gambar dari storage & DB
             foreach ($imageDeleteIds as $imgId) {
                 $img = $imagesBefore->get($imgId);
@@ -410,13 +435,13 @@ class ReportController extends Controller
                 }
             }
             ReportImage::whereIn('id', $imageDeleteIds)->delete();
-    
+
             // Validasi gambar baru/lama dari request
             $validImages = [];
             foreach ($incomingImages as $key => $image) {
                 $indexData++;
                 $img = ReportImage::find($image['image_id']);
-    
+
                 if (!$img) {
                     $errors["image_id.$key"] = [trans('validation.in', [
                         'attribute' => trans('validation.attributes.image_id') . " $indexData"
@@ -425,7 +450,7 @@ class ReportController extends Controller
                     $validImages[$img->id] = $img;
                 }
             }
-    
+
             if (!empty($errors)) {
                 DB::rollBack();
                 return response()->json(['errors' => $errors], 422);
@@ -433,7 +458,7 @@ class ReportController extends Controller
 
             // Update text fields if they are present in the request.
             $report->update($request->only(['title', 'content']));
-    
+
             // Update relasi report_id dan flag temporary
             foreach ($validImages as $img) {
                 $img->report_id = $report->id;
