@@ -354,12 +354,20 @@ class ReportController extends Controller
 
             switch ($action) {
                 case 'completed':
-                    $report->createStatusLog($user->id, Report::SUCCESS, $note, $user->position_id);
+                    $notes = "Laporan telah selesai diproses.";
+                    if ($note) {
+                        $notes .= " Catatan: '$note'";
+                    }
+                    $report->createStatusLog($user->id, Report::SUCCESS, $notes, $user->position_id);
                     $report->status = Report::SUCCESS;
                     break;
 
                 case 'rejected':
-                    $report->createStatusLog($user->id, Report::REJECTED, $note, $user->position_id);
+                    $notes = "Laporan ditolak.";
+                    if ($note) {
+                        $notes .= " Catatan: '$note'";
+                    }
+                    $report->createStatusLog($user->id, Report::REJECTED, $notes, $user->position_id);
                     $report->status = Report::REJECTED;
                     break;
 
@@ -370,9 +378,10 @@ class ReportController extends Controller
                         'to_position_id' => $request->input('position_id'),
                         'note' => $note,
                     ]);
-
-                    $report->createStatusLog($user->id, Report::PENDING, $note, $user->position_id, $disposition->id);
+                    $noteDisposition = "Laporan didisposisikan ke {$disposition->toPosition->name}.";
+                    $report->createStatusLog($user->id, Report::PENDING, $noteDisposition, $user->position_id, $disposition->id);
                     $report->status = Report::PENDING;
+                    $report->temp_position_id = $request->position_id; 
                     break;
             }
 

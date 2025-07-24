@@ -249,20 +249,27 @@ class ReportCrudController extends CrudController
 
             switch ($request->action) {
                 case 'completed':
-                    // dd(backpack_auth()->user()->position_id);
+                    $notes = "Laporan telah selesai diproses.";
+                    if ($request->note) {
+                        $notes .= " Catatan: '$request->note'";
+                    }
                     $report->createStatusLog(
                         backpack_auth()->user()->id,
                         Report::SUCCESS,
-                        $request->note,
+                        $notes,
                         backpack_auth()->user()->position_id
                     );
                     $report->status = Report::SUCCESS;
                     break;
                 case 'rejected':
+                    $notes = "Laporan ditolak.";
+                    if ($request->notes) {
+                        $notes .= " Catatan: '$request->notes'";
+                    }
                     $report->createStatusLog(
                         backpack_auth()->user()->id,
                         Report::REJECTED,
-                        $request->note,
+                        $request->notes,
                         backpack_auth()->user()->position_id
                     );
                     $report->status = Report::REJECTED;
@@ -274,10 +281,11 @@ class ReportCrudController extends CrudController
                         'to_position_id' => $request->position_id,
                         'note' => $request->note, // Menyimpan catatan disposisi
                     ]);
+                    $noteDisposition = "Laporan didisposisikan ke {$disposition->toPosition->name}.";
                     $report->createStatusLog(
                         backpack_auth()->user()->id,
                         Report::PENDING,
-                        $request->note,
+                        $noteDisposition,
                         backpack_auth()->user()->position_id,
                         $disposition->id // Menyimpan ID disposisi jika ada
                     );

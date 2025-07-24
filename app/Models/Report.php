@@ -27,7 +27,7 @@ class Report extends Model
 
     const SUBMITTED = 'submitted';
     const PENDING = 'pending';
-    const SUCCESS = 'success';
+    const SUCCESS = 'completed';
     const REJECTED = 'rejected';
     const CANCELLED = 'cancelled';
 
