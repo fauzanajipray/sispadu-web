@@ -248,12 +248,12 @@ class ReportController extends Controller
         $user = auth()->user();
 
         // Authorization Check 1: Ensure the authenticated user is the owner of the report.
-        if ($report->user_id !== $user->id) {
+        if ($report->user_id != $user->id) {
             return response()->json(['message' => 'You are not authorized to cancel this report.'], 403);
         }
 
         // Authorization Check 2: Ensure the report can be cancelled (only when 'submitted').
-        if ($report->status !== Report::SUBMITTED) {
+        if ($report->status != Report::SUBMITTED) {
             return response()->json(['message' => 'This report cannot be cancelled as it is already being processed.'], 422);
         }
 
@@ -368,11 +368,11 @@ class ReportController extends Controller
         $user = auth()->user();
 
         // 1. Authorization: Ensure the user owns the report and it's in a modifiable state.
-        if ($report->user_id !== $user->id) {
+        if ($report->user_id != $user->id) {
             return response()->json(['message' => 'You are not authorized to edit this report.'], 403);
         }
 
-        if ($report->status !== Report::SUBMITTED) {
+        if ($report->status != Report::SUBMITTED) {
             return response()->json(['message' => 'This report cannot be edited as it is already being processed.'], 422);
         }
 
