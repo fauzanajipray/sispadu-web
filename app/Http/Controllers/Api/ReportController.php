@@ -397,7 +397,7 @@ class ReportController extends Controller
             $incomingImageIds = $incomingImages->pluck('image_id')->filter()->toArray();
     
             // Ambil gambar lama
-            $imagesBefore = ReportImage::where('report_id', $id)->get()->keyBy('id');
+            $imagesBefore = ReportImage::where('report_id', $report->id)->get()->keyBy('id');
     
             // Cari gambar lama yang tidak ada di list baru (harus dihapus)
             $imageDeleteIds = $imagesBefore->keys()->diff($incomingImageIds)->toArray();
@@ -448,7 +448,8 @@ class ReportController extends Controller
             return response()->json($report);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Failed to update report.', 'error' => $e->getMessage()], 500);
+            throw $e;
+            // return response()->json(['message' => 'Failed to update report.', 'error' => $e->getMessage()], 500);
         }
     }
 
